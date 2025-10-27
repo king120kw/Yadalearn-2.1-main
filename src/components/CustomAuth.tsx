@@ -158,7 +158,7 @@ const CustomAuth = () => {
           max-width: 100%;
           min-height: 480px;
         }
-
+k
         .container p {
           font-size: 14px;
           line-height: 20px;
