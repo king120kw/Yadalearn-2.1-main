@@ -1,7 +1,7 @@
 import CustomAuth from "@/components/CustomAuth";
 
 const Signup = () => {
-  return <CustomAuth />;
+  return <CustomAuth formType="signUp" />;
 };
 
 export default Signup;
