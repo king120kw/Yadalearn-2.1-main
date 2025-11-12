@@ -14,17 +14,29 @@ export default function CustomAuth() {
     setIsLoading(true);
     setError("");
 
+<<<<<<< HEAD
     // Simulate authentication
+=======
+    // Simulate login
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
     setTimeout(() => {
       setIsLoading(false);
       if (signInData.email && signInData.password) {
         localStorage.setItem('user', JSON.stringify({
+<<<<<<< HEAD
           email: signInData.email,
           name: signInData.email.split('@')[0]
         }));
         navigate("/role-selection");
       } else {
         setError("Please enter both email and password");
+=======
+          email: signInData.email
+        }));
+        navigate("/role-selection");
+      } else {
+        setError("Please fill in all fields");
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
       }
     }, 1000);
   };

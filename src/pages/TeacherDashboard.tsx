@@ -26,6 +26,7 @@ const TeacherDashboard = () => {
 
   // ALL hooks must be called before any conditional logic
   useEffect(() => {
+<<<<<<< HEAD
     if (isLoaded) {
       // Check both userRole from context and localStorage as fallback
       const savedRole = localStorage.getItem('yadalearn-user-role');
@@ -36,6 +37,10 @@ const TeacherDashboard = () => {
       if (!hasUser || !isTeacher) {
         navigate('/role-selection');
       }
+=======
+    if (isLoaded && (!user || userRole !== 'teacher')) {
+      navigate('/role-selection');
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
     }
   }, [user, isLoaded, userRole, navigate]);
 
@@ -57,6 +62,7 @@ const TeacherDashboard = () => {
   }, []);
 
   // Compute derived values after all hooks are called
+<<<<<<< HEAD
   // Check both userRole from context and localStorage as fallback
   const savedRole = localStorage.getItem('yadalearn-user-role');
   const savedUser = localStorage.getItem('yadalearn-user');
@@ -66,6 +72,11 @@ const TeacherDashboard = () => {
   const isReady = isLoaded && hasUser && isTeacher;
   const shouldRedirectToLogin = isLoaded && !hasUser;
   const shouldRedirectToRoleSelection = isLoaded && hasUser && !isTeacher;
+=======
+  const isReady = isLoaded && user && userRole === 'teacher';
+  const shouldRedirectToLogin = isLoaded && !user;
+  const shouldRedirectToRoleSelection = isLoaded && user && userRole !== 'teacher';
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
 
   // Handle redirects after hooks but before render
   if (shouldRedirectToLogin) {
@@ -119,15 +130,25 @@ const TeacherDashboard = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 text-center sm:text-left">
                   {/* Profile Picture - Responsive sizing */}
                   <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-4 border-white shadow-lg">
+<<<<<<< HEAD
                     <AvatarImage src={currentUser?.imageUrl || "/teacher-avatar.jpg"} />
                     <AvatarFallback className="bg-gradient-to-br from-teal-500 to-blue-500 text-white text-xl sm:text-2xl">
                       {currentUser?.firstName?.[0] || currentUser?.name?.[0] || 'T'}{currentUser?.lastName?.[0] || ''}
+=======
+                    <AvatarImage src={user?.imageUrl || "/teacher-avatar.jpg"} />
+                    <AvatarFallback className="bg-gradient-to-br from-teal-500 to-blue-500 text-white text-xl sm:text-2xl">
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
                     </AvatarFallback>
                   </Avatar>
 
                   <div className="space-fluid-md">
                     <h1 className="text-fluid-2xl sm:text-fluid-3xl font-bold text-gray-800 mb-2">
+<<<<<<< HEAD
                       Welcome back, {currentUser?.firstName || currentUser?.name || 'Teacher'}! 👋
+=======
+                      Welcome back, {user?.firstName || 'Maria'}! 👋
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
                     </h1>
                     <p className="text-fluid-base sm:text-fluid-lg text-gray-600 mb-3">
                       Mathematics Teacher
@@ -162,9 +183,15 @@ const TeacherDashboard = () => {
                 {/* Profile Pictures - Top Right - Responsive */}
                 <div className="flex items-center gap-2 sm:gap-3">
                   <Avatar className="h-10 w-10 sm:h-12 sm:w-12 border-2 border-white shadow-md">
+<<<<<<< HEAD
                     <AvatarImage src={currentUser?.imageUrl || "/teacher-avatar.jpg"} />
                     <AvatarFallback className="bg-gradient-to-br from-teal-500 to-blue-500 text-white text-sm sm:text-base">
                       {currentUser?.firstName?.[0] || currentUser?.name?.[0] || 'T'}{currentUser?.lastName?.[0] || ''}
+=======
+                    <AvatarImage src={user?.imageUrl || "/teacher-avatar.jpg"} />
+                    <AvatarFallback className="bg-gradient-to-br from-teal-500 to-blue-500 text-white text-sm sm:text-base">
+                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+>>>>>>> 1c0bb00b08ffa2b079832f215f5d7038065bba68
                     </AvatarFallback>
                   </Avatar>
                   <button
