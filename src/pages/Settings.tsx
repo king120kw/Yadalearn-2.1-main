@@ -14,7 +14,7 @@ import { UserButton } from "@clerk/clerk-react";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded, userRole } = useAuth();
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -228,6 +228,35 @@ const Settings = () => {
             </Select>
           </div>
         </div>
+
+        {/* Professional Documents (Teacher-only) */}
+        {userRole === 'teacher' && (
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-purple-600" />
+              <h2 className="text-xl font-bold text-gray-800">Professional Documents</h2>
+            </div>
+            <p className="text-sm text-gray-600 mb-3">Upload your CV (PDF/DOC/DOCX). It will be available on your profile.</p>
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) {
+                    localStorage.setItem('yadalearn-teacher-cv-name', file.name);
+                    alert(`CV uploaded: ${file.name}`);
+                  }
+                }}
+                className="text-sm"
+              />
+              <Button variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => {
+                const cv = localStorage.getItem('yadalearn-teacher-cv-name');
+                alert(cv ? `Current CV: ${cv}` : 'No CV uploaded yet');
+              }}>View Current</Button>
+            </div>
+          </div>
+        )}
 
         {/* Security */}
         <div

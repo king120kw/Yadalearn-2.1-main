@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Users, Calendar, Upload, Video, Clock, Settings, DollarSign, Play, Home, Search, User } from 'lucide-react';
+import { Bell, Users, Calendar, Upload, Video, Clock, Settings, DollarSign, Play, Home, Search, User, Star } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -704,7 +704,7 @@ const TeacherDashboard = () => {
         <div className="max-w-2xl mx-auto px-4">
           <div className="flex items-center justify-around h-20">
             {/* Home */}
-            <button className="flex flex-col items-center justify-center w-full h-full gap-1 text-indigo-600 transition-colors">
+            <button onClick={() => navigate('/teacher-dashboard')} className="flex flex-col items-center justify-center w-full h-full gap-1 text-indigo-600 transition-colors">
               <Home size={24} className="fill-current" />
               <span className="text-xs font-medium">Home</span>
             </button>

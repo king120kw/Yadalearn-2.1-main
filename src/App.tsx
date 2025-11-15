@@ -21,7 +21,7 @@ import MobileScreensShowcase from "./pages/MobileScreensShowcase";
 import "@/assets/css/fonts.css";
 
 const App = () => (
-  <BrowserRouter>
+  <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
     <AuthProvider>
       <Routes>
         <Route path="/welcome" element={<Welcome />} />
