@@ -16,6 +16,7 @@ interface AuthContextType {
   clearUserRole: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +66,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('yadalearn-user-role');
   };
 
+  const updateUser = (updates: Partial<User>) => {
+    setUser((prev) => {
+      const next = { ...(prev || { email: '', name: '' }), ...updates };
+      localStorage.setItem('yadalearn-user', JSON.stringify(next));
+      return next;
+    });
+  };
+
   const setUserRole = (role: 'teacher' | 'student' | null) => {
     setUserRoleState(role);
     if (role) {
@@ -87,7 +96,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUserRole,
       clearUserRole,
       login,
-      logout
+      logout,
+      updateUser
     }}>
       {children}
     </AuthContext.Provider>

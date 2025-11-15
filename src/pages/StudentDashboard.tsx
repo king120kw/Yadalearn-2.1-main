@@ -75,10 +75,10 @@ const StudentDashboard = () => {
           </div>
           <div className="mt-6">
             <Card className="border-0 shadow-strong rounded-2xl overflow-hidden cursor-pointer" onClick={() => setIsProgressOpen(true)}>
-              <CardContent className="p-0">
-                <div className="relative">
-                  <div className="p-6 sm:p-8">
-                    <p className="text-sm text-gray-200">Your Learning Progress</p>
+              <CardContent className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 items-center">
+                  <div className="sm:col-span-2">
+                    <p className="text-sm text-gray-500">Your Learning Progress</p>
                     <div className="mt-2">
                       <span className="text-fluid-5xl font-bold">{currentUser.performance}%</span>
                     </div>
@@ -88,14 +88,14 @@ const StudentDashboard = () => {
                       <div>Study Buddies Online: {currentUser.friendsOnPlatform}</div>
                     </div>
                   </div>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <div className="flex justify-center sm:justify-end">
                     <Avatar className="h-20 w-20 ring-4 ring-white">
                       <AvatarImage src={currentUser.avatar} />
                       <AvatarFallback>{currentUser.name[0]}</AvatarFallback>
                     </Avatar>
                   </div>
                 </div>
-                <div className="px-6 sm:px-8 pb-6 sm:pb-8">
+                <div className="mt-6">
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-lg font-bold">{currentUser.sessionsCompleted}</div>

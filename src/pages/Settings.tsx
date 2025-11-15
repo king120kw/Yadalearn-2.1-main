@@ -14,7 +14,9 @@ import { UserButton } from "@clerk/clerk-react";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, isLoaded, userRole } = useAuth();
+  const { user, isLoaded, userRole, updateUser } = useAuth();
+  const [viewMode, setViewMode] = useState<string>(() => localStorage.getItem('yadalearn-view-mode') || 'comfortable');
+  const [paymentFormat, setPaymentFormat] = useState<string>(() => localStorage.getItem('yadalearn-payment-format') || 'card');
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -89,14 +91,22 @@ const Settings = () => {
               </Avatar>
             )}
             <div className="space-y-2 text-center sm:text-left">
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                onClick={() => alert('Change photo functionality - Profile updates managed by Clerk')}
-              >
-                Change Photo
-              </Button>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      updateUser({ imageUrl: url });
+                      alert('Profile image updated');
+                    }
+                  }}
+                  className="text-sm"
+                />
+                <Button variant="outline" size="sm" className="border-purple-300 text-purple-700 hover:bg-purple-50" onClick={() => updateUser({ imageUrl: '' })}>Remove</Button>
+              </div>
               <p className="text-xs text-gray-500">JPG, PNG or GIF. Max 2MB</p>
             </div>
           </div>
@@ -147,13 +157,33 @@ const Settings = () => {
               <p className="text-xs text-gray-500">Account type is determined by your role selection</p>
             </div>
 
-            <Button
-              className="w-full bg-gradient-to-br from-purple-400 to-purple-600 text-white py-3 rounded-full font-medium hover:scale-105 transition-transform"
-              onClick={() => alert('Profile information is managed by Clerk authentication')}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Manage in Authentication Provider
-            </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-gray-700">View Mode</Label>
+                <Select value={viewMode} onValueChange={(val) => { setViewMode(val); localStorage.setItem('yadalearn-view-mode', val); }}>
+                  <SelectTrigger className="border-purple-200 focus:border-purple-400 bg-gray-50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="comfortable">Comfortable</SelectItem>
+                    <SelectItem value="compact">Compact</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-700">Payment Format</Label>
+                <Select value={paymentFormat} onValueChange={(val) => { setPaymentFormat(val); localStorage.setItem('yadalearn-payment-format', val); }}>
+                  <SelectTrigger className="border-purple-200 focus:border-purple-400 bg-gray-50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="card">Card</SelectItem>
+                    <SelectItem value="paypal">PayPal</SelectItem>
+                    <SelectItem value="bank">Bank Transfer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
         </div>
 

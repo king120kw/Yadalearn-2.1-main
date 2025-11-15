@@ -172,7 +172,7 @@ Updates reflect instantly across all dashboard locations`;
           alert('📅 My Classes\n\nView your scheduled classes:\n• Upcoming sessions\n• Class history\n• Teacher information\n• Session recordings');
         }
       },
-      { icon: User, label: "Profile", path: "/profile" },
+      { icon: User, label: "Profile", path: "/settings" },
     ];
   }
 };
