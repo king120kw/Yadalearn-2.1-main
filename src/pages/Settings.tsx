@@ -347,7 +347,6 @@ const Settings = () => {
           </Button>
         </div>
         </div>
-        </div>
       </main>
 
       <BottomNav />

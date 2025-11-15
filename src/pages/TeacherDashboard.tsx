@@ -134,20 +134,19 @@ const TeacherDashboard = () => {
     <div className="min-h-screen pb-24" style={{ background: '#f8f5ff' }}>
       <header className="w-full">
         <div className="mx-auto max-w-6xl px-4 py-4">
-          <div className="flex items-center justify-end gap-3">
-            <Button variant="outline" className="rounded-full px-4">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
+              <img src="/yadalearn-favicon.svg" alt="Yadalearn" className="h-8 w-8" />
               <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.imageUrl || "/teacher-avatar.jpg"} />
                 <AvatarFallback>{user?.firstName?.[0]}{user?.lastName?.[0]}</AvatarFallback>
               </Avatar>
-              <div className="hidden sm:block text-xs text-gray-600">
-                Score: {studentProgress.avgProgress}%
-              </div>
             </div>
+            <Button variant="outline" className="rounded-full px-4">
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </Button>
+            <div className="hidden sm:block text-xs text-gray-600">Score: {teacherMetrics.avgProgress}%</div>
           </div>
         </div>
       </header>
