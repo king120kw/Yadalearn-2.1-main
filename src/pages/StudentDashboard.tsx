@@ -23,6 +23,24 @@ const StudentDashboard = () => {
   const { currentUser } = mockStore;
   const { topTeachers, upcomingClasses, courses, weeklySchedule } = mockQuery;
 
+  const savedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('yadalearn-user') || '{}');
+    } catch { return {}; }
+  })();
+  const emailKey = savedUser.email ? `yadalearn-metrics-${savedUser.email}` : null;
+  const savedMetrics = (() => {
+    try {
+      return emailKey ? JSON.parse(localStorage.getItem(emailKey) || '{}') : {};
+    } catch { return {}; }
+  })();
+  const metrics = {
+    performance: savedMetrics.performance ?? 0,
+    sessionsCompleted: savedMetrics.sessionsCompleted ?? 0,
+    interviewsCompleted: savedMetrics.interviewsCompleted ?? 0,
+    totalHours: savedMetrics.totalHours ?? 0,
+  };
+
   const handleTeacherClick = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setIsModalOpen(true);
@@ -80,7 +98,7 @@ const StudentDashboard = () => {
                   <div className="sm:col-span-2">
                     <p className="text-sm text-gray-500">Your Learning Progress</p>
                     <div className="mt-2">
-                      <span className="text-fluid-5xl font-bold">{currentUser.performance}%</span>
+                      <span className="text-fluid-5xl font-bold">{metrics.performance}%</span>
                     </div>
                     <p className="mt-2 text-fluid-body text-gray-700">Overall performance score</p>
                     <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-gray-700">
@@ -96,20 +114,20 @@ const StudentDashboard = () => {
                   </div>
                 </div>
                 <div className="mt-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{currentUser.sessionsCompleted}</div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                      <div className="text-lg font-bold">{metrics.sessionsCompleted}</div>
                       <div className="text-xs text-gray-600">Sessions</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{currentUser.interviewsCompleted}</div>
+                      </div>
+                      <div className="text-center">
+                      <div className="text-lg font-bold">{metrics.interviewsCompleted}</div>
                       <div className="text-xs text-gray-600">Interviews</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{currentUser.totalHours}</div>
+                      </div>
+                      <div className="text-center">
+                      <div className="text-lg font-bold">{metrics.totalHours}</div>
                       <div className="text-xs text-gray-600">Hours</div>
+                      </div>
                     </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -70,9 +70,22 @@ const Settings = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="mx-auto max-w-6xl px-3 sm:px-6 py-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <aside className="bg-white rounded-3xl p-4 shadow-lg md:sticky md:top-4 h-max">
+          <nav className="space-y-2">
+            <Button variant="ghost" className="w-full justify-start" onClick={() => document.getElementById('profile-section')?.scrollIntoView({ behavior: 'smooth' })}>Profile</Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => document.getElementById('notifications-section')?.scrollIntoView({ behavior: 'smooth' })}>Notifications</Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => document.getElementById('language-section')?.scrollIntoView({ behavior: 'smooth' })}>Language</Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => document.getElementById('security-section')?.scrollIntoView({ behavior: 'smooth' })}>Security & Access</Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => navigate('/settings')}>Settings Home</Button>
+          </nav>
+        </aside>
+
+        {/* Content */}
+        <div className="md:col-span-3 space-y-6">
         {/* Profile Section */}
-        <div className="bg-white rounded-3xl p-6 shadow-lg">
+        <div id="profile-section" className="bg-white rounded-3xl p-6 shadow-lg">
           <div className="flex items-center gap-2 mb-6">
             <User className="h-5 w-5 text-purple-600" />
             <h2 className="text-xl font-bold text-gray-800">Profile Information</h2>
@@ -188,7 +201,7 @@ const Settings = () => {
         </div>
 
         {/* Notification Preferences */}
-        <div
+        <div id="notifications-section"
           className="bg-white rounded-3xl p-6 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
           onClick={() => alert('Notification preferences - Coming soon!')}
         >
@@ -234,7 +247,7 @@ const Settings = () => {
         </div>
 
         {/* Language Settings */}
-        <div
+        <div id="language-section"
           className="bg-white rounded-3xl p-6 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
           onClick={() => alert('Language settings - Coming soon!')}
         >
@@ -289,7 +302,7 @@ const Settings = () => {
         )}
 
         {/* Security */}
-        <div
+        <div id="security-section"
           className="bg-white rounded-3xl p-6 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
           onClick={() => alert('Security settings - Coming soon!')}
         >
@@ -332,6 +345,8 @@ const Settings = () => {
             <LogOut className="mr-2 h-4 w-4" />
             Log Out
           </Button>
+        </div>
+        </div>
         </div>
       </main>
 

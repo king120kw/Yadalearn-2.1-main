@@ -112,6 +112,23 @@ const TeacherDashboard = () => {
     { name: 'Pending', value: studentProgress.pendingTasks, color: '#E5E7EB' }
   ];
 
+  const savedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('yadalearn-user') || '{}');
+    } catch { return {}; }
+  })();
+  const emailKey = savedUser.email ? `yadalearn-metrics-${savedUser.email}` : null;
+  const savedMetrics = (() => {
+    try {
+      return emailKey ? JSON.parse(localStorage.getItem(emailKey) || '{}') : {};
+    } catch { return {}; }
+  })();
+  const teacherMetrics = {
+    avgProgress: savedMetrics.avgProgress ?? studentProgress.avgProgress ?? 0,
+    sessions: savedMetrics.sessions ?? teacherStats.completed ?? 0,
+    hours: savedMetrics.hours ?? teacherStats.thisWeek ?? 0,
+  };
+
   // 4) Main render (hooks remain in same order every render)
   return (
     <div className="min-h-screen pb-24" style={{ background: '#f8f5ff' }}>
@@ -155,7 +172,7 @@ const TeacherDashboard = () => {
                   <div className="sm:col-span-2">
                     <p className="text-sm text-gray-500">Your Teaching Progress</p>
                     <div className="mt-2">
-                      <span className="text-fluid-5xl font-bold">{studentProgress.avgProgress}%</span>
+                      <span className="text-fluid-5xl font-bold">{teacherMetrics.avgProgress}%</span>
                     </div>
                     <p className="mt-2 text-fluid-body text-gray-700">Overall performance score</p>
                     <div className="mt-4 grid grid-cols-3 gap-3 text-sm text-gray-700">
@@ -172,20 +189,20 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
                 <div className="mt-6">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
                       <div className="text-lg font-bold">{teacherStats.totalStudents}</div>
                       <div className="text-xs text-gray-600">Sessions</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{teacherStats.completed}</div>
+                      </div>
+                      <div className="text-center">
+                      <div className="text-lg font-bold">{teacherMetrics.sessions}</div>
                       <div className="text-xs text-gray-600">Interviews</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-bold">{teacherStats.thisWeek}</div>
+                      </div>
+                      <div className="text-center">
+                      <div className="text-lg font-bold">{teacherMetrics.hours}</div>
                       <div className="text-xs text-gray-600">Hours</div>
+                      </div>
                     </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
