@@ -92,65 +92,7 @@ Current Schedule Preview:
       {
         icon: User,
         label: "Profile",
-        path: "/settings",
-        action: () => {
-          // Redirects to the Teacher Settings Page with all editable information
-          const profileInfo = `👤 Teacher Settings Page
-
-📋 Profile Information:
-• Edit full name and professional bio
-• Upload/change profile picture
-• Update contact information
-
-📄 CV Upload:
-• Upload PDF/DOCX files (≤5MB)
-• Preview and download options
-• Secure cloud storage
-
-🎓 Teaching Preferences:
-• Choose subjects (Math, Science, English, etc.)
-• Set hourly/session rates
-• Select educational systems (IGCSE, IB, etc.)
-
-⏰ Availability:
-• Set teaching schedule
-• Block time slots
-• Manage free/busy status
-
-💰 Earnings:
-• Monthly/yearly income summaries
-• Transaction history
-• Payment method setup (bank/PayPal)
-• Payout requests
-
-🌐 Language Selection:
-• Indonesian 🇮🇩
-• Swahili 🇰🇪
-• Bahasa (Malay) 🇲🇾
-• Arabic 🇸🇦
-• English 🇬🇧
-• Burmese 🇲🇲
-• Chinese 🇨🇳
-
-🎨 Theme Options:
-• Light Mode
-• Dark Mode
-• Neutral Mode
-
-🌍 Globe (International View):
-• Interactive world map
-• Global student availability
-• Country-specific requests
-
-🚪 Logout:
-• Secure session termination
-• Return to Welcome Screen
-
-✨ Profile Picture Sync:
-Updates reflect instantly across all dashboard locations`;
-
-          alert(profileInfo);
-        }
+        path: "/settings"
       },
     ];
   } else {
