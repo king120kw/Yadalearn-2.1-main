@@ -324,7 +324,7 @@ const RoleSelection = () => {
                 }`}
             >
               <div
-                className={`group cursor-pointer transition-all duration-300 ${selectedRole === 'student' ? 'scale-105' : 'hover:scale-105'
+                className={`group cursor-pointer transition-all duration-300 ${selectedRole === 'student' ? 'animate-zoom-in-fade-out' : 'hover:scale-105'
                   }`}
                 onClick={() => handleRoleSelect('student')}
               >
@@ -427,7 +427,7 @@ const RoleSelection = () => {
                 }`}
             >
               <div
-                className={`group cursor-pointer transition-all duration-300 ${selectedRole === 'teacher' ? 'scale-105' : 'hover:scale-105'
+                className={`group cursor-pointer transition-all duration-300 ${selectedRole === 'teacher' ? 'animate-zoom-in-fade-out' : 'hover:scale-105'
                   }`}
                 onClick={() => handleRoleSelect('teacher')}
               >
