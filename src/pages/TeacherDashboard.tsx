@@ -93,14 +93,14 @@ const TeacherDashboard = () => {
   const strokeDasharray = `${progressPercentage}, 100`;
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark pb-24">
-      <div className="p-6 sm:p-8">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pb-24 safe-bottom">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
           <div>
-            <p className="text-base text-subtext-light dark:text-subtext-dark mb-1">Welcome Back!</p>
+            <p className="text-base text-subtext-light dark:text-subtext-dark mb-1">Welcome back, Teacher</p>
             <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">
-              Hi, {currentUser?.firstName || currentUser?.name || 'Teacher'}👋
+              Hi, {currentUser?.firstName || (currentUser?.name ? currentUser.name.split(' ')[0] : 'Teacher')} 👋
             </h1>
           </div>
           <div className="flex items-center -space-x-3">
@@ -120,7 +120,24 @@ const TeacherDashboard = () => {
 
         {/* Progress Section */}
         <section className="mb-8">
-          <div className="bg-gradient-to-br from-[var(--peach-start)] to-[var(--peach-end)] p-6 rounded-3xl shadow-soft text-[#A66041] relative overflow-hidden">
+          <div
+            className="bg-gradient-to-br from-[var(--peach-start)] to-[var(--peach-end)] p-6 rounded-3xl shadow-soft text-[#A66041] relative overflow-hidden transition-transform duration-300 ease-out"
+            style={{ transformStyle: 'preserve-3d' }}
+            onMouseMove={(e) => {
+              const card = e.currentTarget;
+              const rect = card.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              const centerX = rect.width / 2;
+              const centerY = rect.height / 2;
+              const rotateX = ((y - centerY) / centerY) * -10;
+              const rotateY = ((x - centerX) / centerX) * 10;
+              card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+            }}
+          >
             <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/20 rounded-full"></div>
             <div className="absolute bottom-4 -left-12 w-28 h-28 bg-white/10 rounded-full"></div>
             <div className="flex justify-between items-start mb-4 z-10 relative">
@@ -174,7 +191,7 @@ const TeacherDashboard = () => {
         {/* Quick Actions */}
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-4 text-text-light dark:text-text-dark">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 sm:gap-5">
             <div
               className="bg-gradient-to-br from-[var(--mint-start)] to-[var(--mint-end)] p-5 rounded-3xl flex flex-col justify-between shadow-soft text-[#2F857B] h-32 cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => setActiveModal('class')}

@@ -29,12 +29,12 @@ const StudentDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark pb-24">
-      <div className="p-6 sm:p-8">
+    <div className="min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-10 pb-24 safe-bottom">
         {/* Header */}
         <header className="flex justify-between items-center mb-8">
           <div>
-            <p className="text-base text-subtext-light dark:text-subtext-dark mb-1">Welcome Back!</p>
+            <p className="text-base text-subtext-light dark:text-subtext-dark mb-1">Welcome back, Student</p>
             <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">
               Hi, {currentUser.name.split(' ')[0]} 👋
             </h1>
@@ -56,25 +56,69 @@ const StudentDashboard = () => {
 
         {/* Progress Section */}
         <section className="mb-8">
-          <div className="bg-gradient-to-tr from-rose-100 to-teal-100 p-5 rounded-4xl shadow-soft-float text-slate-700 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/30 rounded-full"></div>
-            <div className="absolute bottom-4 -left-12 w-28 h-28 bg-white/20 rounded-full"></div>
-            <div className="flex justify-between items-start z-10 relative">
-              <div className="flex-1 pr-4">
+          <div
+            className="bg-gradient-to-br from-blue-100 to-purple-100 p-6 rounded-3xl shadow-soft text-[#5B4A9F] relative overflow-hidden transition-transform duration-300 ease-out"
+            style={{ transformStyle: 'preserve-3d' }}
+            onMouseMove={(e) => {
+              const card = e.currentTarget;
+              const rect = card.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const y = e.clientY - rect.top;
+              const centerX = rect.width / 2;
+              const centerY = rect.height / 2;
+              const rotateX = ((y - centerY) / centerY) * -10;
+              const rotateY = ((x - centerX) / centerX) * 10;
+              card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+            }}
+          >
+            <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/20 rounded-full"></div>
+            <div className="absolute bottom-4 -left-12 w-28 h-28 bg-white/10 rounded-full"></div>
+            <div className="flex justify-between items-start mb-4 z-10 relative">
+              <div>
                 <h2 className="text-xl font-bold">Your Progress</h2>
-                <p className="text-sm opacity-80 mt-1">Keep up the great work!</p>
-                <div className="mt-4 flex items-center space-x-2">
-                  <span className="material-symbols-outlined text-xl">school</span>
-                  <span className="text-base font-medium">{courses.length} Courses</span>
+                <p className="text-sm opacity-80">This Month</p>
+              </div>
+              <button className="w-8 h-8 flex items-center justify-center bg-white/40 rounded-full">
+                <span className="material-symbols-outlined text-lg">more_horiz</span>
+              </button>
+            </div>
+            <div className="flex items-center justify-between z-10 relative">
+              <div className="relative w-28 h-28">
+                <svg className="w-full h-full" style={{ transform: 'rotate(-90deg)' }} viewBox="0 0 36 36">
+                  <path
+                    className="text-white/30"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  />
+                  <path
+                    className="text-white"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeDasharray="0, 100"
+                    strokeLinecap="round"
+                    strokeWidth="3"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold text-white">0%</span>
+                  <span className="text-xs opacity-90">Completed</span>
                 </div>
               </div>
-              <div className="flex-shrink-0">
-                <Avatar className="w-20 h-20 border-4 border-white/50 shadow-md">
-                  <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white text-2xl">
-                    {currentUser.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="text-right space-y-4">
+                <div>
+                  <p className="text-base font-medium">Completed</p>
+                  <p className="text-sm opacity-80">0 tasks</p>
+                </div>
+                <div>
+                  <p className="text-base font-medium">Pending</p>
+                  <p className="text-sm opacity-80">0 tasks</p>
+                </div>
               </div>
             </div>
           </div>
@@ -83,7 +127,7 @@ const StudentDashboard = () => {
         {/* Quick Actions */}
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-4 text-text-light dark:text-text-dark">Quick Actions</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 lg:grid-cols-6 gap-3 sm:gap-4">
             <div className="bg-white dark:bg-gray-800/40 p-4 rounded-3xl shadow-soft flex flex-col items-center justify-center gap-2 cursor-pointer hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center">
                 <span className="material-symbols-outlined text-blue-500 dark:text-blue-400">schedule</span>

@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Logout from "./pages/Logout";
 import NotFound from "./pages/NotFound";
 import Onboarding from "./pages/Onboarding";
+import ProfileSetup from "./pages/ProfileSetup";
 import MobileScreensShowcase from "./pages/MobileScreensShowcase";
 import "@/assets/css/fonts.css";
 
@@ -34,6 +35,7 @@ const App = () => (
         <Route path="/signup" element={<Signup />} />
         <Route path="/premium" element={<Premium />} />
         <Route path="/role-selection" element={<RoleSelection />} />
+        <Route path="/profile-setup" element={<ProfileSetup />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />

@@ -76,7 +76,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark pb-24">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark">
       {/* Sticky Header */}
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center border-b border-gray-200/50 bg-background-light/80 px-4 backdrop-blur-lg dark:border-gray-800/50 dark:bg-background-dark/80">
         <button
@@ -91,7 +91,7 @@ const Settings = () => {
         <div className="h-10 w-10"></div>
       </header>
 
-      <main className="flex-1 space-y-6 p-5">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-5 pb-24 safe-bottom">
         {/* Profile Card */}
         <section className="flex items-center gap-4 rounded-4xl bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-soft dark:from-indigo-900/40 dark:to-purple-900/40">
           {user.imageUrl ? (
