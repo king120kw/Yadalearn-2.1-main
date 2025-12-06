@@ -100,7 +100,7 @@ const TeacherDashboard = () => {
           <div>
             <p className="text-base text-subtext-light dark:text-subtext-dark mb-1">Welcome back, Teacher</p>
             <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">
-              Hi, {currentUser?.firstName || (currentUser?.name ? currentUser.name.split(' ')[0] : 'Teacher')} 👋
+              Hi, {currentUser?.firstName || (currentUser?.name ? currentUser.name.split(' ')[0] : 'Teacher')}
             </h1>
           </div>
           <div className="flex items-center -space-x-3">

@@ -26,9 +26,10 @@ const RoleSelection = () => {
 
   const handleRoleSelect = (role: 'student' | 'teacher') => {
     setSelectedRole(role);
+    // Zoom and fade animation before navigation
     setTimeout(() => {
-      navigate('/profile-setup', { state: { role: role } });
-    }, 300);
+      navigate('/onboarding', { state: { role: role } });
+    }, 800); // Increased delay for zoom animation
   };
 
   return (
@@ -66,7 +67,8 @@ const RoleSelection = () => {
                   }`}
               >
                 <div
-                  className={`role-card-3d group cursor-pointer relative`}
+                  className={`role-card-3d group cursor-pointer relative transition-all duration-800 ${selectedRole === 'student' ? 'scale-150 opacity-0' : ''
+                    }`}
                   onClick={() => handleRoleSelect('student')}
                   onMouseMove={(e) => {
                     const card = e.currentTarget;
@@ -88,8 +90,8 @@ const RoleSelection = () => {
                     {/* Complex shadow effect for student */}
                     <div
                       className={`transition-all duration-300 ${selectedRole === 'student'
-                          ? 'opacity-100 scale-110'
-                          : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
+                        ? 'opacity-100 scale-110'
+                        : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
                         }`}
                       style={{
                         width: '300px',
@@ -182,7 +184,8 @@ const RoleSelection = () => {
                   }`}
               >
                 <div
-                  className={`role-card-3d group cursor-pointer relative`}
+                  className={`role-card-3d group cursor-pointer relative transition-all duration-800 ${selectedRole === 'teacher' ? 'scale-150 opacity-0' : ''
+                    }`}
                   onClick={() => handleRoleSelect('teacher')}
                   onMouseMove={(e) => {
                     const card = e.currentTarget;
@@ -204,8 +207,8 @@ const RoleSelection = () => {
                     {/* Complex shadow effect for teacher */}
                     <div
                       className={`transition-all duration-300 ${selectedRole === 'teacher'
-                          ? 'opacity-100 scale-110'
-                          : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
+                        ? 'opacity-100 scale-110'
+                        : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
                         }`}
                       style={{
                         width: '300px',
@@ -329,8 +332,8 @@ const RoleSelection = () => {
                   {/* Mobile shadow effect for student */}
                   <div
                     className={`transition-all duration-300 ${selectedRole === 'student'
-                        ? 'opacity-100 scale-110'
-                        : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
+                      ? 'opacity-100 scale-110'
+                      : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
                       }`}
                     style={{
                       width: '280px',
@@ -432,8 +435,8 @@ const RoleSelection = () => {
                   {/* Mobile shadow effect for teacher */}
                   <div
                     className={`transition-all duration-300 ${selectedRole === 'teacher'
-                        ? 'opacity-100 scale-110'
-                        : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
+                      ? 'opacity-100 scale-110'
+                      : 'opacity-0 group-hover:opacity-50 group-hover:scale-105'
                       }`}
                     style={{
                       width: '280px',

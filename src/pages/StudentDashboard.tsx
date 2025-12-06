@@ -36,7 +36,7 @@ const StudentDashboard = () => {
           <div>
             <p className="text-base text-subtext-light dark:text-subtext-dark mb-1">Welcome back, Student</p>
             <h1 className="text-2xl font-bold text-text-light dark:text-text-dark">
-              Hi, {currentUser.name.split(' ')[0]} 👋
+              Hi, {currentUser.name.split(' ')[0]}
             </h1>
           </div>
           <div className="flex items-center -space-x-3">

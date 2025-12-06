@@ -8,16 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Globe, BookOpen, GraduationCap, Target, Clock, Calendar, 
-  CheckCircle2, Languages, BookMarked, TrendingUp, Users, 
-  UserCircle, Star, Award, Zap, Video, DollarSign, 
+import {
+  Globe, BookOpen, GraduationCap, Target, Clock, Calendar,
+  CheckCircle2, Languages, BookMarked, TrendingUp, Users,
+  UserCircle, Star, Award, Zap, Video, DollarSign,
   Sparkles, Rocket, Trophy, Heart
 } from 'lucide-react';
 
 const Onboarding = () => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [language, setLanguage] = useState<string>(() => localStorage.getItem('yadalearn-lang') || 'en');
 
@@ -76,23 +76,22 @@ const Onboarding = () => {
     if (currentStep < maxStep) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Complete onboarding
-      if (!user) {
-        const defaultUser = {
-          email: 'onboarding@yadalearn.com',
-          name: role === 'teacher' ? 'Teacher' : 'Student',
-          firstName: role === 'teacher' ? 'Teacher' : 'Student',
-          lastName: '',
-          imageUrl: ''
-        };
-        localStorage.setItem('yadalearn-user', JSON.stringify(defaultUser));
-      }
-      
+      // Complete onboarding - save user data with name from answers
+      const userName = answers.userName || (role === 'teacher' ? 'Teacher' : 'Student');
+      const defaultUser = {
+        email: 'onboarding@yadalearn.com',
+        name: userName,
+        firstName: userName.split(' ')[0],
+        lastName: userName.split(' ').slice(1).join(' ') || '',
+        imageUrl: ''
+      };
+      localStorage.setItem('yadalearn-user', JSON.stringify(defaultUser));
+
       localStorage.setItem('yadalearn-user-role', role);
       localStorage.setItem('yadalearn-lang', language);
       localStorage.setItem('yadalearn-onboarding-answers', JSON.stringify(answers));
       setUserRole?.(role);
-      
+
       const dashboardPath = role === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
       setTimeout(() => {
         navigate(dashboardPath, { replace: true });
@@ -101,7 +100,7 @@ const Onboarding = () => {
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
     }
   };
@@ -114,10 +113,10 @@ const Onboarding = () => {
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'BUTTON') {
         return;
       }
-      
+
       const maxStep = getMaxStep();
       const isValid = isStepValid();
-      
+
       if (e.key === 'ArrowLeft' && currentStep > 1) {
         e.preventDefault();
         setCurrentStep(prev => prev - 1);
@@ -141,6 +140,33 @@ const Onboarding = () => {
 
   // STUDENT ONBOARDING
   const renderStudentStep = () => {
+    // Step 0: Name Input (First Question)
+    if (currentStep === 0) {
+      return (
+        <div className="space-y-6">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 mb-4">
+              <UserCircle className="h-10 w-10 text-purple-600" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+              What's your name?
+            </h2>
+            <p className="text-gray-600">Let's personalize your experience</p>
+          </div>
+          <div className="max-w-md mx-auto">
+            <Input
+              type="text"
+              placeholder="Enter your full name"
+              value={answers.userName || ''}
+              onChange={(e) => handleAnswer('userName', e.target.value)}
+              className="w-full px-6 py-4 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 transition-all text-lg"
+              autoFocus
+            />
+          </div>
+        </div>
+      );
+    }
+
     // Step 1: Study Path
     if (currentStep === 1) {
       return (
@@ -159,17 +185,15 @@ const Onboarding = () => {
             onValueChange={(value) => handleAnswer('studyPath', value)}
             className="space-y-4"
           >
-            <div 
-              className={`relative flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
-                answers.studyPath === 'Languages' 
-                  ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg scale-105' 
-                  : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-md'
-              }`}
+            <div
+              className={`relative flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${answers.studyPath === 'Languages'
+                ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg scale-105'
+                : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-md'
+                }`}
               onClick={() => handleAnswer('studyPath', 'Languages')}
             >
-              <div className={`flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center ${
-                answers.studyPath === 'Languages' ? 'bg-purple-500' : 'bg-purple-100'
-              }`}>
+              <div className={`flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center ${answers.studyPath === 'Languages' ? 'bg-purple-500' : 'bg-purple-100'
+                }`}>
                 <Globe className={`h-8 w-8 ${answers.studyPath === 'Languages' ? 'text-white' : 'text-purple-600'}`} />
               </div>
               <div className="flex-1">
@@ -183,17 +207,15 @@ const Onboarding = () => {
                 <CheckCircle2 className="h-6 w-6 text-purple-600 flex-shrink-0" />
               )}
             </div>
-            <div 
-              className={`relative flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
-                answers.studyPath === 'IGCSE' 
-                  ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-teal-50 shadow-lg scale-105' 
-                  : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
-              }`}
+            <div
+              className={`relative flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${answers.studyPath === 'IGCSE'
+                ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-teal-50 shadow-lg scale-105'
+                : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-md'
+                }`}
               onClick={() => handleAnswer('studyPath', 'IGCSE')}
             >
-              <div className={`flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center ${
-                answers.studyPath === 'IGCSE' ? 'bg-blue-500' : 'bg-blue-100'
-              }`}>
+              <div className={`flex-shrink-0 w-16 h-16 rounded-xl flex items-center justify-center ${answers.studyPath === 'IGCSE' ? 'bg-blue-500' : 'bg-blue-100'
+                }`}>
                 <BookOpen className={`h-8 w-8 ${answers.studyPath === 'IGCSE' ? 'text-white' : 'text-blue-600'}`} />
               </div>
               <div className="flex-1">
@@ -223,7 +245,7 @@ const Onboarding = () => {
           'from-green-100 to-emerald-100 border-green-300',
           'from-indigo-100 to-purple-100 border-indigo-300',
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -242,11 +264,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={lang}
-                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${colorClass} shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${colorClass} shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => {
                       const current = answers.selectedLanguages || [];
                       if (isSelected) {
@@ -285,7 +306,7 @@ const Onboarding = () => {
           { value: 'Intermediate', label: "Intermediate", sublabel: "I can hold simple conversations", icon: TrendingUp, color: 'from-blue-100 to-teal-100 border-blue-300', iconBg: 'bg-blue-500' },
           { value: 'Advanced', label: "Advanced", sublabel: "I want to refine fluency and accuracy", icon: Trophy, color: 'from-purple-100 to-pink-100 border-purple-300', iconBg: 'bg-purple-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -307,11 +328,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={option.value}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${option.color} shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${option.color} shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('currentLevel', option.value)}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${option.iconBg}`}>
@@ -340,7 +360,7 @@ const Onboarding = () => {
           { text: "Study abroad preparation", icon: Globe, color: 'from-green-100 to-emerald-100' },
           { text: "Personal or cultural interest", icon: Heart, color: 'from-pink-100 to-rose-100' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -362,11 +382,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={goal.text}
-                    className={`relative flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${goal.color} border-purple-400 shadow-lg` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${goal.color} border-purple-400 shadow-lg`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('learningObjective', goal.text)}
                   >
                     <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${goal.color} flex items-center justify-center`}>
@@ -392,7 +411,7 @@ const Onboarding = () => {
           { text: "Group sessions", icon: Users, color: 'from-blue-100 to-teal-100', iconBg: 'bg-blue-500' },
           { text: "Self-paced learning", icon: BookOpen, color: 'from-yellow-100 to-orange-100', iconBg: 'bg-yellow-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -414,11 +433,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={pref.text}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${pref.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${pref.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('classPreference', pref.text)}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${pref.iconBg}`}>
@@ -444,7 +462,7 @@ const Onboarding = () => {
           { text: 'Weekends', icon: Clock, color: 'from-purple-100 to-pink-100', iconBg: 'bg-purple-500' },
           { text: 'Flexible', icon: Zap, color: 'from-yellow-100 to-orange-100', iconBg: 'bg-yellow-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -466,11 +484,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={time.text}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${time.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${time.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('timeAvailability', time.text)}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${time.iconBg}`}>
@@ -511,9 +528,9 @@ const Onboarding = () => {
             <p className="text-lg sm:text-xl font-semibold text-gray-800 mb-8">
               Your dashboard is ready— start exploring, connect, and make learning happen.
             </p>
-            <Button 
-              onClick={nextStep} 
-              size="lg" 
+            <Button
+              onClick={nextStep}
+              size="lg"
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full shadow-lg text-lg font-semibold"
             >
               Go to Dashboard →
@@ -539,7 +556,7 @@ const Onboarding = () => {
           { name: 'Business Studies', icon: TrendingUp, color: 'from-blue-100 to-indigo-100', iconBg: 'bg-blue-600' },
           { name: 'Computer Science', icon: Zap, color: 'from-violet-100 to-purple-100', iconBg: 'bg-violet-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -562,11 +579,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={subject.name}
-                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${subject.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
-                    }`}
+                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${subject.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('subjectChoice', subject.name)}
                   >
                     <RadioGroupItem value={subject.name} id={`subject-${subject.name}`} className="absolute opacity-0" />
@@ -592,7 +608,7 @@ const Onboarding = () => {
           { text: 'Year 10', icon: TrendingUp, color: 'from-blue-100 to-teal-100', iconBg: 'bg-blue-500' },
           { text: 'Year 11', icon: Trophy, color: 'from-yellow-100 to-orange-100', iconBg: 'bg-yellow-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -614,11 +630,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={grade.text}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${grade.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${grade.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('gradeLevel', grade.text)}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${grade.iconBg}`}>
@@ -645,7 +660,7 @@ const Onboarding = () => {
           { text: "Practice with past papers", icon: BookOpen, color: 'from-purple-100 to-pink-100', iconBg: 'bg-purple-500' },
           { text: "General improvement and understanding", icon: Sparkles, color: 'from-yellow-100 to-orange-100', iconBg: 'bg-yellow-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -667,11 +682,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={goal.text}
-                    className={`relative flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${goal.color} border-purple-400 shadow-lg` 
-                        : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-3 p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${goal.color} border-purple-400 shadow-lg`
+                      : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('studyGoal', goal.text)}
                   >
                     <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${goal.color} flex items-center justify-center`}>
@@ -697,7 +711,7 @@ const Onboarding = () => {
           { text: "Group lessons", icon: Users, color: 'from-blue-100 to-teal-100', iconBg: 'bg-blue-500' },
           { text: "Self-paced recorded modules", icon: Video, color: 'from-yellow-100 to-orange-100', iconBg: 'bg-yellow-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -719,11 +733,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={pref.text}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${pref.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${pref.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('studyPreference', pref.text)}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${pref.iconBg}`}>
@@ -750,7 +763,7 @@ const Onboarding = () => {
           { text: 'Once a week', icon: Clock, color: 'from-yellow-100 to-orange-100', iconBg: 'bg-yellow-500' },
           { text: 'Flexible', icon: Sparkles, color: 'from-green-100 to-emerald-100', iconBg: 'bg-green-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -772,11 +785,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={schedule.text}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${schedule.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${schedule.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => handleAnswer('studySchedule', schedule.text)}
                   >
                     <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${schedule.iconBg}`}>
@@ -817,9 +829,9 @@ const Onboarding = () => {
             <p className="text-lg sm:text-xl font-semibold text-gray-800 mb-8">
               Your dashboard is ready— start exploring, connect, and make learning happen.
             </p>
-            <Button 
-              onClick={nextStep} 
-              size="lg" 
+            <Button
+              onClick={nextStep}
+              size="lg"
               className="bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white px-8 py-3 rounded-full shadow-lg text-lg font-semibold"
             >
               Go to Dashboard →
@@ -850,9 +862,9 @@ const Onboarding = () => {
           <p className="text-base text-gray-500 mb-8">
             Let's personalize your teaching profile so you can start connecting with the right students.
           </p>
-          <Button 
-            onClick={nextStep} 
-            size="lg" 
+          <Button
+            onClick={nextStep}
+            size="lg"
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full shadow-lg text-lg font-semibold"
           >
             Get Started →
@@ -867,7 +879,7 @@ const Onboarding = () => {
         { name: 'Languages', icon: Globe, color: 'from-purple-50 to-pink-50', border: 'border-purple-400', iconBg: 'bg-purple-500', selectedBg: 'from-purple-100 to-pink-100' },
         { name: 'IGCSE Subjects', icon: BookOpen, color: 'from-blue-50 to-teal-50', border: 'border-blue-400', iconBg: 'bg-blue-500', selectedBg: 'from-blue-100 to-teal-100' }
       ];
-      
+
       return (
         <div className="space-y-6">
           <div className="text-center mb-6">
@@ -886,11 +898,10 @@ const Onboarding = () => {
               return (
                 <div
                   key={focus.name}
-                  className={`relative flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
-                    isSelected 
-                      ? `bg-gradient-to-br ${focus.selectedBg} ${focus.border} shadow-lg scale-105` 
-                      : `bg-gradient-to-br ${focus.color} border-gray-200 hover:${focus.border} hover:shadow-md`
-                  }`}
+                  className={`relative flex items-center space-x-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                    ? `bg-gradient-to-br ${focus.selectedBg} ${focus.border} shadow-lg scale-105`
+                    : `bg-gradient-to-br ${focus.color} border-gray-200 hover:${focus.border} hover:shadow-md`
+                    }`}
                   onClick={() => {
                     const current = answers.teachingFocus || [];
                     if (isSelected) {
@@ -944,7 +955,7 @@ const Onboarding = () => {
           'from-green-100 to-emerald-100 border-green-300',
           'from-indigo-100 to-purple-100 border-indigo-300',
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -963,11 +974,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={lang}
-                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${colorClass} shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${colorClass} shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => {
                       const current = answers.languageSpecialization || [];
                       if (isSelected) {
@@ -1006,7 +1016,7 @@ const Onboarding = () => {
           { name: 'Intermediate', icon: TrendingUp, color: 'from-blue-100 to-teal-100', iconBg: 'bg-blue-500' },
           { name: 'Advanced', icon: Trophy, color: 'from-purple-100 to-pink-100', iconBg: 'bg-purple-500' }
         ];
-        
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-6">
@@ -1025,11 +1035,10 @@ const Onboarding = () => {
                 return (
                   <div
                     key={level.name}
-                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                      isSelected 
-                        ? `bg-gradient-to-br ${level.color} border-purple-400 shadow-lg scale-105` 
-                        : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
-                    }`}
+                    className={`relative flex items-center space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 ${isSelected
+                      ? `bg-gradient-to-br ${level.color} border-purple-400 shadow-lg scale-105`
+                      : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md'
+                      }`}
                     onClick={() => {
                       const current = answers.teachingLevel || [];
                       if (isSelected) {
@@ -1201,9 +1210,9 @@ const Onboarding = () => {
     // IGCSE Path for Teachers (show only if Languages not selected, or after Languages path completed)
     // For simplicity: if both selected, do Languages first. If only IGCSE, do IGCSE.
     // Note: If both are selected, user completes Languages path first, then can complete IGCSE separately
-    const showIGCSEPath = answers.teachingFocus?.includes('IGCSE Subjects') && 
-        (!answers.teachingFocus?.includes('Languages') || !answers.languageSpecialization || currentStep > 9);
-    
+    const showIGCSEPath = answers.teachingFocus?.includes('IGCSE Subjects') &&
+      (!answers.teachingFocus?.includes('Languages') || !answers.languageSpecialization || currentStep > 9);
+
     if (showIGCSEPath) {
       if (currentStep === 3) {
         return (
@@ -1424,8 +1433,8 @@ const Onboarding = () => {
         if (currentStep === 6) return !!answers.lessonFormat;
         if (currentStep === 7) return !!answers.availability;
         if (currentStep === 8) return !!(answers.minRate && answers.maxRate);
-      } else if (answers.teachingFocus?.includes('IGCSE Subjects') && 
-                 (!answers.teachingFocus?.includes('Languages') || !answers.languageSpecialization)) {
+      } else if (answers.teachingFocus?.includes('IGCSE Subjects') &&
+        (!answers.teachingFocus?.includes('Languages') || !answers.languageSpecialization)) {
         if (currentStep === 3) return answers.subjectSpecialization?.length > 0;
         if (currentStep === 4) return !!answers.gradeLevelFocus;
         if (currentStep === 5) return !!answers.teachingStyle;
@@ -1482,9 +1491,9 @@ const Onboarding = () => {
           <div className="flex justify-between items-center pt-6 gap-4">
             {/* Previous Button - Show on all steps except first */}
             {currentStep > 1 ? (
-              <Button 
-                variant="outline" 
-                onClick={prevStep} 
+              <Button
+                variant="outline"
+                onClick={prevStep}
                 className="min-w-[120px] border-2 border-gray-300 hover:border-purple-400 hover:bg-purple-50 rounded-full"
                 type="button"
               >
@@ -1495,7 +1504,7 @@ const Onboarding = () => {
                 Use ← → arrow keys to navigate
               </div>
             )}
-            
+
             {/* Next/Complete Button - Show on all steps */}
             <Button
               onClick={nextStep}
@@ -1506,7 +1515,7 @@ const Onboarding = () => {
               {currentStep === maxStep ? 'Complete →' : (currentStep === 1 && role === 'teacher' ? 'Get Started →' : 'Next →')}
             </Button>
           </div>
-          
+
           {/* Keyboard hint for mobile */}
           <div className="text-xs text-gray-400 text-center mt-2 sm:hidden">
             Tap buttons to navigate
