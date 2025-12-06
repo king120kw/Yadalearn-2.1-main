@@ -242,26 +242,6 @@ export default function CustomAuth() {
           z-index: 1000;
         }
         
-        .container.active .toggle-container {
-          transform: translateX(-100%);
-          border-radius: 0 150px 100px 0;
-        }
-        
-        .toggle {
-          background: linear-gradient(to right, #5c6bc0, #512da8);
-          height: 100%;
-          color: #fff;
-          position: relative;
-          left: -100%;
-          width: 200%;
-          transform: translateX(0);
-          transition: all 0.6s ease-in-out;
-        }
-        
-        .container.active .toggle {
-          transform: translateX(50%);
-        }
-        
         .toggle-panel {
           position: absolute;
           width: 50%;
@@ -305,15 +285,15 @@ export default function CustomAuth() {
           margin: 20px 0;
         }
       `}</style>
-      
-      <link 
-        rel="stylesheet" 
+
+      <link
+        rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
       />
-      
+
       <div className="main-wrapper">
         <div className={`container ${isActive ? 'active' : ''}`}>
-          
+
           <div className="form-container sign-in">
             <form className="form-content" onSubmit={handleSignIn}>
               <h1>Sign In</h1>
@@ -322,18 +302,18 @@ export default function CustomAuth() {
                 <a href="#" className="facebook"><i className="fa-brands fa-facebook-f"></i></a>
               </div>
               <span>or use your email password</span>
-              <input 
-                type="email" 
-                placeholder="Email" 
+              <input
+                type="email"
+                placeholder="Email"
                 value={signInData.email}
-                onChange={(e) => setSignInData({...signInData, email: e.target.value})}
+                onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
                 required
               />
-              <input 
-                type="password" 
-                placeholder="Password" 
+              <input
+                type="password"
+                placeholder="Password"
                 value={signInData.password}
-                onChange={(e) => setSignInData({...signInData, password: e.target.value})}
+                onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
                 required
               />
               {error && <p style={{ color: "red", fontSize: "12px" }}>{error}</p>}
@@ -352,25 +332,25 @@ export default function CustomAuth() {
                 <a href="#" className="facebook"><i className="fa-brands fa-facebook-f"></i></a>
               </div>
               <span>or use your email for registration</span>
-              <input 
-                type="text" 
-                placeholder="Name" 
+              <input
+                type="text"
+                placeholder="Name"
                 value={signUpData.name}
-                onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })}
                 required
               />
-              <input 
-                type="email" 
-                placeholder="Email" 
+              <input
+                type="email"
+                placeholder="Email"
                 value={signUpData.email}
-                onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
                 required
               />
-              <input 
-                type="password" 
-                placeholder="Password" 
+              <input
+                type="password"
+                placeholder="Password"
                 value={signUpData.password}
-                onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                 required
               />
               {error && <p style={{ color: "red", fontSize: "12px" }}>{error}</p>}
