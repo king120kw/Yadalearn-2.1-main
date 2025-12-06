@@ -1,47 +1,51 @@
-﻿import { useState } from "react";
+﻿import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 
 export default function CustomAuth() {
   const [isActive, setIsActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [signInData, setSignInData] = useState({ email: '', password: '' });
+  const [signUpData, setSignUpData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState("");
-  const [signInData, setSignInData] = useState({ email: "", password: "" });
-  const [signUpData, setSignUpData] = useState({ name: "", email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
+    setError("");
 
+    // Simulate authentication
     setTimeout(() => {
+      setIsLoading(false);
       if (signInData.email && signInData.password) {
         localStorage.setItem('user', JSON.stringify({
           email: signInData.email,
+          name: signInData.email.split('@')[0]
         }));
         navigate("/role-selection");
       } else {
-        setError("Please fill in all fields");
+        setError("Please enter both email and password");
       }
-      setIsLoading(false);
     }, 1000);
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
+    setError("");
 
+    // Simulate registration
     setTimeout(() => {
+      setIsLoading(false);
       if (signUpData.name && signUpData.email && signUpData.password) {
         localStorage.setItem('user', JSON.stringify({
           email: signUpData.email,
+          name: signUpData.name
         }));
         navigate("/role-selection");
       } else {
         setError("Please fill in all fields");
       }
-      setIsLoading(false);
     }, 1000);
   };
 
@@ -49,22 +53,28 @@ export default function CustomAuth() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
-
+        
         * {
           margin: 0;
           padding: 0;
           box-sizing: border-box;
           font-family: 'Montserrat', sans-serif;
         }
-
+        
+        body {
+          margin: 0;
+          padding: 0;
+        }
+        
         .main-wrapper {
           background: linear-gradient(to right, #e2e2e2, #c9d6ff);
           min-height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
+          padding: 20px;
         }
-
+        
         .container {
           background-color: #fff;
           border-radius: 30px;
@@ -75,38 +85,38 @@ export default function CustomAuth() {
           max-width: 100%;
           min-height: 480px;
         }
-
+        
         .form-container {
           position: absolute;
           top: 0;
           height: 100%;
           transition: all 0.6s ease-in-out;
         }
-
+        
         .sign-in {
           left: 0;
           width: 50%;
           z-index: 2;
         }
-
+        
         .container.active .sign-in {
           transform: translateX(100%);
         }
-
+        
         .sign-up {
           left: 0;
           width: 50%;
           opacity: 0;
           z-index: 1;
         }
-
+        
         .container.active .sign-up {
           transform: translateX(100%);
           opacity: 1;
           z-index: 5;
           animation: move 0.6s;
         }
-
+        
         @keyframes move {
           0%, 49.99% {
             opacity: 0;
@@ -117,7 +127,7 @@ export default function CustomAuth() {
             z-index: 5;
           }
         }
-
+        
         .form-content {
           background-color: #fff;
           display: flex;
@@ -127,45 +137,48 @@ export default function CustomAuth() {
           padding: 0 40px;
           height: 100%;
         }
-
-        .form-content h1 {
+        
+        h1 {
           font-size: 28px;
+          font-weight: 700;
           margin-bottom: 20px;
         }
-
+        
         .social-icons {
           margin: 20px 0;
+          display: flex;
+          gap: 12px;
         }
-
+        
         .social-icons a {
           border: 1px solid #ccc;
           border-radius: 20%;
           display: inline-flex;
           justify-content: center;
           align-items: center;
-          margin: 0 3px;
           width: 40px;
           height: 40px;
+          text-decoration: none;
           transition: all 0.3s;
         }
-
+        
         .social-icons a:hover {
           border-color: #512da8;
         }
-
+        
         .social-icons a.google {
           color: #4285F4;
         }
-
+        
         .social-icons a.facebook {
           color: #1877F2;
         }
-
+        
         span {
           font-size: 12px;
           margin-bottom: 10px;
         }
-
+        
         input {
           background-color: #eee;
           border: none;
@@ -176,18 +189,18 @@ export default function CustomAuth() {
           width: 100%;
           outline: none;
         }
-
+        
         a {
           color: #333;
           font-size: 13px;
           text-decoration: none;
           margin: 15px 0 10px;
         }
-
+        
         a:hover {
           color: #512da8;
         }
-
+        
         button {
           background-color: #512da8;
           color: #fff;
@@ -202,21 +215,21 @@ export default function CustomAuth() {
           cursor: pointer;
           transition: all 0.3s;
         }
-
+        
         button:hover {
           background-color: #6a3fb8;
         }
-
+        
         button.hidden-btn {
           background-color: transparent;
           border-color: #fff;
         }
-
+        
         button.hidden-btn:hover {
           background-color: #fff;
           color: #512da8;
         }
-
+        
         .toggle-container {
           position: absolute;
           top: 0;
@@ -228,18 +241,17 @@ export default function CustomAuth() {
           border-radius: 150px 0 0 100px;
           z-index: 1000;
         }
-
+        
         .container.active .toggle-container {
           transform: translateX(-100%);
           border-radius: 0 150px 100px 0;
         }
-
+        
         .toggle {
-          background: linear-gradient(to right, rgba(92, 107, 192, 0.8), rgba(81, 45, 168, 0.8)),
+          background: linear-gradient(to right, rgba(92, 107, 192, 0.8), rgba(81, 45, 168, 0.8)), 
                       url('/teacher-auth.jpg');
           background-size: cover;
           background-position: center;
-          background-repeat: no-repeat;
           height: 100%;
           color: #fff;
           position: relative;
@@ -248,16 +260,15 @@ export default function CustomAuth() {
           transform: translateX(0);
           transition: all 0.6s ease-in-out;
         }
-
+        
         .container.active .toggle {
-          background: linear-gradient(to right, rgba(92, 107, 192, 0.8), rgba(81, 45, 168, 0.8)),
+          background: linear-gradient(to right, rgba(92, 107, 192, 0.8), rgba(81, 45, 168, 0.8)), 
                       url('/student-auth.jpg');
           background-size: cover;
           background-position: center;
-          background-repeat: no-repeat;
           transform: translateX(50%);
         }
-
+        
         .toggle-panel {
           position: absolute;
           width: 50%;
@@ -272,28 +283,28 @@ export default function CustomAuth() {
           transform: translateX(0);
           transition: all 0.6s ease-in-out;
         }
-
+        
         .toggle-left {
           transform: translateX(-200%);
         }
-
+        
         .container.active .toggle-left {
           transform: translateX(0);
         }
-
+        
         .toggle-right {
           right: 0;
           transform: translateX(0);
         }
-
+        
         .container.active .toggle-right {
           transform: translateX(200%);
         }
-
+        
         .toggle-panel h1 {
           color: #fff;
         }
-
+        
         .toggle-panel p {
           font-size: 14px;
           line-height: 20px;
