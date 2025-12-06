@@ -67,7 +67,7 @@ const RoleSelection = () => {
                   }`}
               >
                 <div
-                  className={`role-card-3d group cursor-pointer relative transition-all duration-800 ${selectedRole === 'student' ? 'scale-150 opacity-0' : ''
+                  className={`role-card-3d group cursor-pointer relative transition-all duration-800 ${selectedRole === 'student' ? 'animate-zoom-in-fade-out' : ''
                     }`}
                   onClick={() => handleRoleSelect('student')}
                   onMouseMove={(e) => {
@@ -184,7 +184,7 @@ const RoleSelection = () => {
                   }`}
               >
                 <div
-                  className={`role-card-3d group cursor-pointer relative transition-all duration-800 ${selectedRole === 'teacher' ? 'scale-150 opacity-0' : ''
+                  className={`role-card-3d group cursor-pointer relative transition-all duration-800 ${selectedRole === 'teacher' ? 'animate-zoom-in-fade-out' : ''
                     }`}
                   onClick={() => handleRoleSelect('teacher')}
                   onMouseMove={(e) => {

@@ -17,13 +17,13 @@ import {
 
 const Onboarding = () => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [language, setLanguage] = useState<string>(() => localStorage.getItem('yadalearn-lang') || 'en');
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUserRole, user } = useAuth();
+  const { setUserRole, user, refreshUser } = useAuth();
   const role = location.state?.role || 'student';
 
   useEffect(() => {
@@ -91,6 +91,7 @@ const Onboarding = () => {
       localStorage.setItem('yadalearn-lang', language);
       localStorage.setItem('yadalearn-onboarding-answers', JSON.stringify(answers));
       setUserRole?.(role);
+      refreshUser?.();
 
       const dashboardPath = role === 'teacher' ? '/teacher-dashboard' : '/student-dashboard';
       setTimeout(() => {
@@ -100,7 +101,7 @@ const Onboarding = () => {
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
+    if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
     }
   };
@@ -140,33 +141,6 @@ const Onboarding = () => {
 
   // STUDENT ONBOARDING
   const renderStudentStep = () => {
-    // Step 0: Name Input (First Question)
-    if (currentStep === 0) {
-      return (
-        <div className="space-y-6">
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-200 to-pink-200 mb-4">
-              <UserCircle className="h-10 w-10 text-purple-600" />
-            </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-              What's your name?
-            </h2>
-            <p className="text-gray-600">Let's personalize your experience</p>
-          </div>
-          <div className="max-w-md mx-auto">
-            <Input
-              type="text"
-              placeholder="Enter your full name"
-              value={answers.userName || ''}
-              onChange={(e) => handleAnswer('userName', e.target.value)}
-              className="w-full px-6 py-4 rounded-xl border-2 border-gray-200 focus:border-purple-400 focus:ring-2 focus:ring-purple-200 transition-all text-lg"
-              autoFocus
-            />
-          </div>
-        </div>
-      );
-    }
-
     // Step 1: Study Path
     if (currentStep === 1) {
       return (

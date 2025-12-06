@@ -7,14 +7,34 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { user, isLoaded } = useAuth();
+  const { user, isLoaded, refreshUser } = useAuth();
   const [notifications, setNotifications] = useState({
     push: true,
     email: false,
   });
   const [uploadedCV, setUploadedCV] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileInputRef = useRef<HTMLInputElement>(null);
   const userRole = localStorage.getItem('yadalearn-user-role');
+
+  const handleProfileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+
+        // Update localStorage
+        const savedUser = JSON.parse(localStorage.getItem('yadalearn-user') || '{}');
+        savedUser.imageUrl = result;
+        localStorage.setItem('yadalearn-user', JSON.stringify(savedUser));
+
+        // Refresh context
+        refreshUser?.();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   useEffect(() => {
     if (isLoaded && !user) {
@@ -40,8 +60,8 @@ const Settings = () => {
       return `${user.firstName} ${user.lastName}`;
     }
     if (user.firstName) return user.firstName;
-    if (user.username) return user.username;
-    return user.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User';
+    if (user.name) return user.name;
+    return user.email?.split('@')[0] || 'User';
   };
 
   // Get user initials for avatar fallback
@@ -94,24 +114,42 @@ const Settings = () => {
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 md:px-8 py-5 pb-24 safe-bottom">
         {/* Profile Card */}
         <section className="flex items-center gap-4 rounded-4xl bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-soft dark:from-indigo-900/40 dark:to-purple-900/40">
-          {user.imageUrl ? (
-            <img
-              src={user.imageUrl}
-              alt="User Avatar"
-              className="h-16 w-16 rounded-full border-4 border-white/50 object-cover"
-            />
-          ) : (
-            <Avatar className="h-16 w-16 border-4 border-white/50">
-              <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white text-xl">
-                {getInitials()}
-              </AvatarFallback>
-            </Avatar>
-          )}
+          <input
+            ref={profileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleProfileUpload}
+            className="hidden"
+          />
+          <div
+            className="relative cursor-pointer group"
+            onClick={() => profileInputRef.current?.click()}
+          >
+            {user.imageUrl ? (
+              <img
+                src={user.imageUrl}
+                alt="User Avatar"
+                className="h-16 w-16 rounded-full border-4 border-white/50 object-cover group-hover:opacity-80 transition-opacity"
+              />
+            ) : (
+              <Avatar className="h-16 w-16 border-4 border-white/50 group-hover:opacity-80 transition-opacity">
+                <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white text-xl">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="material-symbols-outlined text-white drop-shadow-md">edit</span>
+            </div>
+          </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Welcome back,</p>
             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-              {userRole === 'teacher' ? 'Teacher' : 'Student'}
+              {getDisplayName()}
             </h2>
+            <p className="text-xs text-purple-600 font-medium cursor-pointer" onClick={() => profileInputRef.current?.click()}>
+              Change Profile Photo
+            </p>
           </div>
         </section>
 

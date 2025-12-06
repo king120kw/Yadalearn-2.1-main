@@ -125,6 +125,7 @@ const config = {
         "fade-out": "fade-out 0.5s ease-out forwards",
         "pan-up": "pan-up 1s ease-out forwards",
         "auth-card-slide-up": "auth-card-slide-up 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards",
+        "zoom-in-fade-out": "zoom-in-fade-out 0.8s ease-in forwards",
       },
       boxShadow: {
         soft: '0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
