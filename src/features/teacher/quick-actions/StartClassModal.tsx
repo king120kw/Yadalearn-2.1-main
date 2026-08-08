@@ -505,13 +505,11 @@ export const StartClassModal = ({ isOpen, onClose, session }: StartClassModalPro
                                                 <div key={student.id} className="group flex items-center justify-between p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border border-transparent dark:hover:border-zinc-700">
                                                     <div className="flex items-center gap-3">
                                                         <div className="relative">
-                                                            {student.avatar ? (
-                                                                <img className="size-10 rounded-full object-cover border border-gray-200 dark:border-zinc-700" src={student.avatar} alt={student.name} />
-                                                            ) : (
-                                                                <div className="size-10 rounded-full bg-orange-200 dark:bg-orange-900 flex items-center justify-center text-orange-800 dark:text-orange-200 font-bold border border-gray-200 dark:border-zinc-700">
-                                                                    {student.name.split(' ').map((n: string) => n[0]).join('')}
-                                                                </div>
-                                                            )}
+                                                            <img 
+                                                                className="size-10 rounded-full object-cover border border-gray-200 dark:border-zinc-700 bg-zinc-800" 
+                                                                src={student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(student.name || student.id)}`} 
+                                                                alt={student.name} 
+                                                            />
                                                             <div className={`absolute bottom-0 right-0 size-3 border-2 border-white dark:border-zinc-900 rounded-full ${student.status === 'ready' ? 'bg-green-500' :
                                                                     student.status === 'connecting' ? 'bg-yellow-500' :
                                                                         'bg-gray-500'

@@ -109,6 +109,7 @@ interface MessageTeacherModalProps {
     isOpen: boolean;
     onClose: () => void;
     recipientId?: string;
+    onMessagesRead?: () => void;
 }
 
 
@@ -152,7 +153,7 @@ const rawFetchGlobal = async (table, queryStr, method = 'GET', body = null) => {
     return res.json();
 };
 
-export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTeacherModalProps) => {
+export const MessageTeacherModal = ({ isOpen, onClose, recipientId, onMessagesRead }: MessageTeacherModalProps) => {
     const { user, userRole: role } = useAuth();
     const userId = user?.id;
 
@@ -192,6 +193,31 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
     const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
     const typingChannelRef = useRef<any>(null);
     const typingTimeoutRef = useRef<any>(null);
+
+    // Delete message modal state
+    const [deleteModalMsg, setDeleteModalMsg] = useState<any | null>(null);
+
+    // Deleted for me IDs set
+    const [deletedForMeIds, setDeletedForMeIds] = useState<Set<string>>(() => {
+        if (!userId) return new Set();
+        try {
+            const saved = localStorage.getItem(`deleted_messages_${userId}`);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
+
+    useEffect(() => {
+        if (!userId) return;
+        try {
+            const saved = localStorage.getItem(`deleted_messages_${userId}`);
+            setDeletedForMeIds(saved ? new Set(JSON.parse(saved)) : new Set());
+        } catch {}
+    }, [userId]);
+
+    // Live classes meeting link status cache
+    const [liveClassStatuses, setLiveClassStatuses] = useState<Record<string, any>>({});
 
     useEffect(() => {
         if (isRecording) {
@@ -545,11 +571,68 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
             const unread = messages.filter(m => m.sender_id === selectedPartnerId && !m.is_read);
             if (unread.length > 0) {
                 await rawFetchGlobal('chat_messages', `sender_id=eq.${selectedPartnerId}&receiver_id=eq.${userId}&is_read=eq.false`, 'PATCH', { is_read: true }).catch(console.error);
+                setMessages(prev => prev.map(m => m.sender_id === selectedPartnerId ? { ...m, is_read: true } : m));
                 setUnreadCounts(prev => ({ ...prev, [selectedPartnerId]: 0 }));
+                onMessagesRead?.();
             }
         };
         markAsRead();
     }, [userId, selectedPartnerId, isOpen, messages.length]);
+
+    // Fetch and subscribe to live class statuses for meeting links in messages
+    useEffect(() => {
+        if (messages.length === 0) return;
+
+        const roomIds = new Set<string>();
+        const meetingRegex = /\/meeting\/([a-zA-Z0-9_-]+)/g;
+
+        messages.forEach(m => {
+            if (m.message) {
+                let match;
+                while ((match = meetingRegex.exec(m.message)) !== null) {
+                    if (match[1]) roomIds.add(match[1]);
+                }
+            }
+        });
+
+        if (roomIds.size === 0) return;
+
+        const fetchStatuses = async () => {
+            try {
+                const data = await rawFetchGlobal('live_classes', `room_id=in.(${Array.from(roomIds).join(',')})`);
+                if (data && Array.isArray(data)) {
+                    const mapping: Record<string, any> = {};
+                    data.forEach((lc: any) => {
+                        mapping[lc.room_id] = lc;
+                    });
+                    setLiveClassStatuses(prev => ({ ...prev, ...mapping }));
+                }
+            } catch (err) {
+                console.error("Error fetching live class statuses:", err);
+            }
+        };
+
+        fetchStatuses();
+
+        const lcChannel = supabase.channel('live-classes-chat-status')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'live_classes'
+            }, (payload) => {
+                if (payload.new && (payload.new as any).room_id) {
+                    setLiveClassStatuses(prev => ({
+                        ...prev,
+                        [(payload.new as any).room_id]: payload.new
+                    }));
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(lcChannel);
+        };
+    }, [messages]);
 
     const automatedMessageSentRef = useRef<Record<string, boolean>>({});
 
@@ -693,6 +776,18 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
         }
     };
 
+    const handleDeleteForMe = (msgId: string) => {
+        if (!userId) return;
+        setDeletedForMeIds(prev => {
+            const next = new Set(prev);
+            next.add(msgId);
+            try {
+                localStorage.setItem(`deleted_messages_${userId}`, JSON.stringify(Array.from(next)));
+            } catch {}
+            return next;
+        });
+    };
+
     const handlePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -757,7 +852,8 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
         setNewMessageText(prev => prev + emoji);
     };
 
-    const groupedMessages = groupMessagesByDate(messages);
+    const visibleMessages = messages.filter(m => !deletedForMeIds.has(m.id));
+    const groupedMessages = groupMessagesByDate(visibleMessages);
 
     const renderMessageText = (text: string) => {
         const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
@@ -768,11 +864,58 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
             if (match.index > lastIndex) {
                 parts.push(text.substring(lastIndex, match.index));
             }
-            parts.push(
-                <a key={match.index} href={match[2]} className="inline-flex items-center font-extrabold underline decoration-2 underline-offset-2 hover:opacity-80 transition-opacity">
-                    {match[1]}
-                </a>
-            );
+            const label = match[1];
+            const url = match[2];
+
+            const meetingMatch = url.match(/\/meeting\/([a-zA-Z0-9_-]+)/);
+            let isEnded = false;
+
+            if (meetingMatch && meetingMatch[1]) {
+                const roomId = meetingMatch[1];
+                const lc = liveClassStatuses[roomId];
+                if (lc) {
+                    const status = lc.status?.toLowerCase();
+                    if (status === 'completed' || status === 'ended' || status === 'cancelled') {
+                        isEnded = true;
+                    } else if (status === 'scheduled' && lc.scheduled_at) {
+                        const scheduledTime = new Date(lc.scheduled_at).getTime();
+                        const durationMs = (lc.duration_minutes || 60) * 60 * 1000;
+                        if (Date.now() > scheduledTime + durationMs) {
+                            isEnded = true;
+                        }
+                    } else if (status !== 'active') {
+                        isEnded = true;
+                    }
+                } else {
+                    const parts = roomId.split('-');
+                    const timestampStr = parts[parts.length - 1];
+                    if (/^\d{10,}$/.test(timestampStr)) {
+                        const createdAt = parseInt(timestampStr, 10);
+                        if (Date.now() - createdAt > 60 * 60 * 1000) {
+                            isEnded = true;
+                        }
+                    }
+                }
+            }
+
+            if (isEnded) {
+                parts.push(
+                    <span 
+                        key={match.index} 
+                        className="inline-flex items-center gap-1 font-bold text-gray-400 dark:text-zinc-500 bg-gray-200/60 dark:bg-zinc-800/60 px-2 py-0.5 rounded text-xs leading-none cursor-not-allowed select-none my-0.5" 
+                        title="This class session has ended"
+                    >
+                        <span className="material-symbols-outlined text-[14px]">event_busy</span>
+                        {label} (Ended)
+                    </span>
+                );
+            } else {
+                parts.push(
+                    <a key={match.index} href={url} className="inline-flex items-center font-extrabold underline decoration-2 underline-offset-2 hover:opacity-80 transition-opacity">
+                        {label}
+                    </a>
+                );
+            }
             lastIndex = match.index + match[0].length;
         }
         if (lastIndex < text.length) {
@@ -998,31 +1141,42 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
                                                                 isMe ? "justify-end" : "justify-start"
                                                             )}
                                                         >
-                                                            <div className="relative group flex items-center" tabIndex={0}>
-                                                                {/* Edit/Delete hover triggers for my messages */}
-                                                                {isMe && (
-                                                                    <div className="absolute left-[-60px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 focus-within:opacity-100 flex items-center gap-1 bg-white dark:bg-zinc-800 shadow-lg border border-gray-100 dark:border-zinc-700 p-1.5 rounded-xl z-20 transition-opacity duration-200">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setEditingMessage(msg);
-                                                                                setNewMessageText(msg.message);
-                                                                            }}
-                                                                            title="Edit message"
-                                                                            className="text-gray-400 hover:text-blue-500 hover:bg-gray-50 dark:hover:bg-zinc-700 p-1 rounded-lg transition-all"
-                                                                        >
-                                                                            <Edit2 className="h-3 w-3" />
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleDeleteMessage(msg.id)}
-                                                                            title="Delete message"
-                                                                            className="text-gray-400 hover:text-red-500 hover:bg-gray-50 dark:hover:bg-zinc-700 p-1 rounded-lg transition-all"
-                                                                        >
-                                                                            <Trash2 className="h-3 w-3" />
-                                                                        </button>
-                                                                    </div>
-                                                                )}
+                                                                <div className="relative group flex items-center" tabIndex={0}>
+                                                                    {/* Edit/Delete hover triggers */}
+                                                                    {isMe ? (
+                                                                        <div className="absolute left-[-60px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 focus-within:opacity-100 flex items-center gap-1 bg-white dark:bg-zinc-800 shadow-lg border border-gray-100 dark:border-zinc-700 p-1.5 rounded-xl z-20 transition-opacity duration-200">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setEditingMessage(msg);
+                                                                                    setNewMessageText(msg.message);
+                                                                                }}
+                                                                                title="Edit message"
+                                                                                className="text-gray-400 hover:text-blue-500 hover:bg-gray-50 dark:hover:bg-zinc-700 p-1 rounded-lg transition-all"
+                                                                            >
+                                                                                <Edit2 className="h-3 w-3" />
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setDeleteModalMsg(msg)}
+                                                                                title="Delete message"
+                                                                                className="text-gray-400 hover:text-red-500 hover:bg-gray-50 dark:hover:bg-zinc-700 p-1 rounded-lg transition-all"
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="absolute right-[-36px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 group-focus:opacity-100 focus-within:opacity-100 flex items-center gap-1 bg-white dark:bg-zinc-800 shadow-lg border border-gray-100 dark:border-zinc-700 p-1.5 rounded-xl z-20 transition-opacity duration-200">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setDeleteModalMsg(msg)}
+                                                                                title="Delete message"
+                                                                                className="text-gray-400 hover:text-red-500 hover:bg-gray-50 dark:hover:bg-zinc-700 p-1 rounded-lg transition-all"
+                                                                            >
+                                                                                <Trash2 className="h-3 w-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
 
                                                                     <div
                                                                         className={cn(
@@ -1229,6 +1383,56 @@ export const MessageTeacherModal = ({ isOpen, onClose, recipientId }: MessageTea
                     </div>
                 </div>
             </DialogContent>
+
+            {/* Delete Message Options Modal */}
+            {deleteModalMsg && (
+                <Dialog open={true} onOpenChange={() => setDeleteModalMsg(null)}>
+                    <DialogContent className="sm:max-w-[400px] rounded-3xl p-6 bg-white dark:bg-zinc-900 border-0 shadow-2xl z-[100]">
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-3 text-red-500">
+                                <div className="p-3 bg-red-100 dark:bg-red-950/30 rounded-2xl">
+                                    <Trash2 className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg text-gray-900 dark:text-white">Delete Message</h3>
+                                    <p className="text-xs text-gray-500 dark:text-zinc-400">Choose how you want to delete this message.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 mt-2">
+                                {deleteModalMsg.sender_id === userId && (
+                                    <button
+                                        onClick={async () => {
+                                            const msgId = deleteModalMsg.id;
+                                            setDeleteModalMsg(null);
+                                            await handleDeleteMessage(msgId);
+                                        }}
+                                        className="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm transition-colors shadow-sm flex items-center justify-center gap-2"
+                                    >
+                                        Delete for Everybody
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        const msgId = deleteModalMsg.id;
+                                        setDeleteModalMsg(null);
+                                        handleDeleteForMe(msgId);
+                                    }}
+                                    className="w-full py-3 px-4 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                                >
+                                    Delete for Me Only
+                                </button>
+                                <button
+                                    onClick={() => setDeleteModalMsg(null)}
+                                    className="w-full py-2.5 px-4 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white font-semibold text-xs transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </Dialog>
     );
 };

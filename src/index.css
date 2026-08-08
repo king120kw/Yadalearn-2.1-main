@@ -705,7 +705,7 @@ Inspired by modern learning applications with soft pastel palette
   .desktop-main {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     padding: clamp(2rem, 5vw, 4rem);
   }
 }

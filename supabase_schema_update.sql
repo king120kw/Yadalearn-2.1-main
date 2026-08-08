@@ -108,6 +108,45 @@ DROP POLICY IF EXISTS "Students join class" ON class_participants;
 
 DROP POLICY IF EXISTS "Users read own ratings" ON session_ratings;
 DROP POLICY IF EXISTS "Participants can rate completed sessions" ON session_ratings;
+DROP POLICY IF EXISTS "Public read session ratings" ON session_ratings;
+DROP POLICY IF EXISTS "Auth insert session ratings" ON session_ratings;
+
+CREATE POLICY "Public read session ratings" ON session_ratings
+  FOR SELECT USING (true);
+
+CREATE POLICY "Auth insert session ratings" ON session_ratings
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated' AND auth.uid() = rater_id);
+
+-- Database Trigger to automatically recalculate teacher_profiles.rating upon session_ratings change
+CREATE OR REPLACE FUNCTION public.sync_teacher_profile_rating()
+RETURNS TRIGGER AS $$
+DECLARE
+  target_teacher_id UUID;
+  avg_val NUMERIC;
+BEGIN
+  IF (TG_OP = 'DELETE') THEN
+    target_teacher_id := OLD.rated_id;
+  ELSE
+    target_teacher_id := NEW.rated_id;
+  END IF;
+
+  IF target_teacher_id IS NOT NULL THEN
+    SELECT ROUND(AVG(rating)::numeric, 1) INTO avg_val
+    FROM public.session_ratings
+    WHERE rated_id = target_teacher_id AND rated_as = 'teacher';
+
+    UPDATE public.teacher_profiles
+    SET rating = COALESCE(avg_val, 0)
+    WHERE id = target_teacher_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_sync_teacher_profile_rating ON public.session_ratings;
+CREATE TRIGGER trg_sync_teacher_profile_rating
+AFTER INSERT OR UPDATE OR DELETE ON public.session_ratings
+FOR EACH ROW EXECUTE FUNCTION public.sync_teacher_profile_rating();
 
 -- Define Policies
 
@@ -203,18 +242,14 @@ CREATE POLICY "Students join class" ON class_participants
     )
   );
 
--- 5. session_ratings Policies
-CREATE POLICY "Users read own ratings" ON session_ratings 
-  FOR SELECT USING (rater_id = auth.uid() OR rated_id = auth.uid());
+-- 6. chat_messages Policies
+DROP POLICY IF EXISTS "Users can update chat messages in their conversations" ON chat_messages;
+DROP POLICY IF EXISTS "Users can delete chat messages in their conversations" ON chat_messages;
 
-CREATE POLICY "Participants can rate completed sessions" ON session_ratings
-  FOR INSERT WITH CHECK (
-    auth.uid() = rater_id 
-    AND EXISTS (
-      SELECT 1 FROM class_participants cp
-      JOIN live_classes lc ON cp.class_id = lc.id
-      WHERE lc.id = session_ratings.class_id 
-      AND lc.status = 'ended'
-      AND (cp.student_id = auth.uid() OR lc.teacher_id = auth.uid())
-    )
-  );
+CREATE POLICY "Users can update chat messages in their conversations" ON chat_messages
+  FOR UPDATE USING ((auth.uid() = sender_id) OR (auth.uid() = receiver_id))
+  WITH CHECK ((auth.uid() = sender_id) OR (auth.uid() = receiver_id));
+
+CREATE POLICY "Users can delete chat messages in their conversations" ON chat_messages
+  FOR DELETE USING ((auth.uid() = sender_id) OR (auth.uid() = receiver_id));
+

@@ -1,13 +1,103 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 export default function RateTeacher() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [teacherId, setTeacherId] = useState<string | null>(null);
+  const [teacherName, setTeacherName] = useState<string>('Your Teacher');
+
+  useEffect(() => {
+    async function resolveTeacher() {
+      if (!id) return;
+      try {
+        // 1. Check if id directly matches a teacher profile
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (prof && prof.role === 'teacher') {
+          setTeacherId(prof.id);
+          if (prof.full_name) setTeacherName(prof.full_name);
+          return;
+        }
+
+        // 2. Check if id is a live_classes record
+        const { data: lc } = await supabase
+          .from('live_classes')
+          .select('teacher_id, teacher:profiles!live_classes_teacher_id_fkey(full_name)')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (lc && lc.teacher_id) {
+          setTeacherId(lc.teacher_id);
+          if ((lc.teacher as any)?.full_name) setTeacherName((lc.teacher as any).full_name);
+          return;
+        }
+
+        // 3. Check if id is a booking
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('teacher_id, teacher:profiles!bookings_teacher_id_fkey(full_name)')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (booking && booking.teacher_id) {
+          setTeacherId(booking.teacher_id);
+          if ((booking.teacher as any)?.full_name) setTeacherName((booking.teacher as any).full_name);
+          return;
+        }
+
+        // 4. If room_id style (e.g. class-teacherId-timestamp)
+        if (id.startsWith('class-')) {
+          const parts = id.split('-');
+          if (parts.length >= 2) {
+            const potentialTeacherId = parts[1];
+            const { data: teacherProf } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .eq('id', potentialTeacherId)
+              .maybeSingle();
+
+            if (teacherProf) {
+              setTeacherId(teacherProf.id);
+              if (teacherProf.full_name) setTeacherName(teacherProf.full_name);
+              return;
+            }
+          }
+        }
+
+        // 5. Fallback: Find teacher from current student's links or bookings
+        if (user?.id) {
+          const { data: link } = await supabase
+            .from('teacher_student_links')
+            .select('teacher_id, teacher:profiles!teacher_student_links_teacher_id_fkey(full_name)')
+            .eq('student_id', user.id)
+            .eq('status', 'accepted')
+            .limit(1)
+            .maybeSingle();
+
+          if (link && link.teacher_id) {
+            setTeacherId(link.teacher_id);
+            if ((link.teacher as any)?.full_name) setTeacherName((link.teacher as any).full_name);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error resolving teacher for rating:', err);
+      }
+    }
+    resolveTeacher();
+  }, [id, user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,10 +107,80 @@ export default function RateTeacher() {
     }
     
     setIsSubmitting(true);
-    // Mock saving the rating
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSubmitting(false);
-    
+    try {
+      const currentUserId = user?.id || localStorage.getItem('yadalearn-user-id');
+      const targetTeacherId = teacherId;
+
+      if (currentUserId && targetTeacherId) {
+        // Insert into session_ratings
+        const isUuidClass = id && id.length === 36 && !id.includes('-');
+        const ratingPayload: any = {
+          rater_id: currentUserId,
+          rated_id: targetTeacherId,
+          rating: rating,
+          feedback: comment || null,
+          rated_as: 'teacher'
+        };
+        if (isUuidClass) {
+          ratingPayload.class_id = id;
+        }
+
+        const { error: ratingErr } = await supabase
+          .from('session_ratings')
+          .insert(ratingPayload);
+
+        if (ratingErr) {
+          console.error('session_ratings insert error:', ratingErr);
+          throw ratingErr;
+        }
+
+        // If id matches a booking, update booking rating field as well
+        if (id) {
+          await supabase
+            .from('bookings')
+            .update({ rating: rating })
+            .eq('id', id);
+        }
+
+        // Recalculate average rating for target teacher
+        const { data: allRatings } = await supabase
+          .from('session_ratings')
+          .select('rating')
+          .eq('rated_id', targetTeacherId)
+          .eq('rated_as', 'teacher');
+
+        let newAverage = rating;
+        if (allRatings && allRatings.length > 0) {
+          const sum = allRatings.reduce((acc: number, curr: any) => acc + (curr.rating || 0), 0);
+          newAverage = Math.round((sum / allRatings.length) * 10) / 10;
+        }
+
+        // Update teacher_profiles
+        await supabase
+          .from('teacher_profiles')
+          .update({ rating: newAverage })
+          .eq('id', targetTeacherId);
+
+        // Broadcast real-time update event so teacher's dashboard receives immediate sync
+        const channel = supabase.channel(`teacher-ratings-${targetTeacherId}`);
+        await channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            channel.send({
+              type: 'broadcast',
+              event: 'rating_updated',
+              payload: { teacherId: targetTeacherId, rating: newAverage }
+            });
+            setTimeout(() => supabase.removeChannel(channel), 1000);
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error('Error submitting rating:', err);
+      alert("Failed to submit rating: " + (err.message || err));
+      return;
+    } finally {
+      setIsSubmitting(false);
+    }
     alert("Thank you for your feedback!");
     navigate('/student-dashboard');
   };

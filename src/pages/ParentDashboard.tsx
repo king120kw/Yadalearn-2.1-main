@@ -146,7 +146,7 @@ const ParentDashboard = () => {
                avatar: t.avatar_url,
                subjects: t.subjects || ['General Subjects'],
                isOnline: !!t.is_online,
-               rating: t.teacher_profiles?.[0]?.rating || 0
+               rating: (Array.isArray(t.teacher_profiles) ? t.teacher_profiles[0]?.rating : t.teacher_profiles?.rating) || 0
              })));
            }
         }

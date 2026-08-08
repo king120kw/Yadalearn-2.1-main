@@ -59,12 +59,17 @@ export const StreamProvider = ({ children }: { children: React.ReactNode }) => {
 
         const { token } = JSON.parse(text);
 
-        streamClient = new StreamVideoClient({
+        // Sanitize image URL to ensure base64 strings or oversized data URLs do not exceed Stream WebSocket 5KB custom data payload limit
+        const rawImage = user.imageUrl || (user as any).avatar_url || '';
+        const isSafeUrl = rawImage && (rawImage.startsWith('http://') || rawImage.startsWith('https://')) && rawImage.length < 1000;
+        const safeImage = isSafeUrl ? rawImage : undefined;
+
+        streamClient = StreamVideoClient.getOrCreateInstance({
           apiKey,
           user: {
             id: user.id,
             name: user.name || 'User',
-            image: (user.imageUrl || user.avatar_url)?.startsWith('data:') ? '' : (user.imageUrl || user.avatar_url || ''),
+            image: safeImage,
           },
           token,
         });
@@ -85,13 +90,8 @@ export const StreamProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => {
       isMounted = false;
-      if (streamClient) {
-        streamClient.disconnectUser();
-        setClient(null);
-        setIsStreamReady(false);
-      }
     };
-  }, [user, isLoaded]);
+  }, [user?.id, isLoaded]);
 
   if (!client || !isStreamReady) {
     return <>{children}</>;

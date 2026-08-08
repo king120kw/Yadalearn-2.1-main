@@ -35,17 +35,17 @@ const RoleSelection = () => {
   };
 
   return (
-    <div className="min-h-screen w-full gradient-welcome relative overflow-hidden">
+    <div className="min-h-screen w-full gradient-welcome relative overflow-x-hidden">
       {/* Animated background elements */}
-      <div className="absolute inset-0 gradient-mesh opacity-20"></div>
+      <div className="absolute inset-0 gradient-mesh opacity-20 pointer-events-none"></div>
 
       {/* Main Content Container */}
       <div className={`min-h-screen w-full relative z-10 transition-all duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
         {/* Desktop Layout - Enhanced */}
-        <div className="hidden lg:flex desktop-split">
+        <div className="hidden lg:flex desktop-split min-h-screen w-full">
           {/* Left side - Enhanced Title and Info */}
-          <div className="w-1/2 desktop-sidebar text-right">
+          <div className="w-1/2 desktop-sidebar text-right lg:sticky lg:top-0 lg:h-screen flex flex-col justify-center">
             <div className="space-fluid-2xl animate-fade-in-up">
               <h1 className="text-fluid-display font-bold text-gray-800 mb-6 leading-tight">
                 Welcome to YadaLearn
@@ -60,8 +60,8 @@ const RoleSelection = () => {
           </div>
 
           {/* Right side - Enhanced Role Selection Cards */}
-          <div className="w-1/2 desktop-main h-screen overflow-y-auto pb-12 pt-12 pr-8 scrollbar-hide">
-            <div className="space-y-8">
+          <div className="w-1/2 desktop-main min-h-screen lg:h-screen overflow-y-auto pt-16 pb-20 px-8 lg:px-12 flex flex-col justify-start">
+            <div className="space-y-8 my-auto py-4 w-full">
 
               {/* Student Role - Enhanced 3D */}
               <div
@@ -263,8 +263,8 @@ const RoleSelection = () => {
         </div>
 
         {/* Mobile Layout */}
-        <div className="md:hidden h-full flex flex-col items-center justify-center px-6">
-          <div className="w-full max-w-sm text-center space-y-8">
+        <div className="lg:hidden min-h-screen w-full flex flex-col items-center justify-start py-12 pb-20 px-6 overflow-y-auto">
+          <div className="w-full max-w-sm text-center space-y-8 my-auto py-4">
 
             {/* Header - Mobile */}
             <div className="space-y-4">
@@ -396,7 +396,7 @@ const RoleSelection = () => {
                   }`}
                 onClick={() => handleRoleSelect('parent')}
               >
-                <div className="relative pb-12">
+                <div className="relative">
                   {/* Mobile shadow effect for parent */}
                   <div
                     className={`transition-all duration-300 ${selectedRole === 'parent'

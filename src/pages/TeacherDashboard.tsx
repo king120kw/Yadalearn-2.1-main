@@ -201,36 +201,45 @@ const TeacherDashboard = () => {
   const [lastMessages, setLastMessages] = useState<Record<string, any>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
+  const fetchLastMessages = async () => {
+    if (!user?.id) return;
+    let deletedSet = new Set<string>();
+    try {
+      const saved = localStorage.getItem(`deleted_messages_${user.id}`);
+      if (saved) deletedSet = new Set(JSON.parse(saved));
+    } catch {}
+
+    const { data } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      const filtered = data.filter((m: any) => !deletedSet.has(m.id));
+      const mapping: any = {};
+      const counts: Record<string, number> = {};
+      filtered.forEach((m: any) => {
+        const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        mapping[partnerId] = {
+          message: m.message,
+          sender_id: m.sender_id,
+          is_read: !!m.is_read,
+          created_at: m.created_at,
+          attachment_type: m.attachment_type
+        };
+        if (!m.is_read && m.receiver_id === user.id) {
+          counts[partnerId] = (counts[partnerId] || 0) + 1;
+        }
+      });
+      setLastMessages(mapping);
+      setUnreadCounts(counts);
+    }
+  };
+
   useEffect(() => {
     if (!user?.id) return;
 
-    const fetchLastMessages = async () => {
-      const { data } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: true });
-
-      if (data) {
-        const mapping: any = {};
-        const counts: Record<string, number> = {};
-        data.forEach((m: any) => {
-          const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
-          mapping[partnerId] = {
-            message: m.message,
-            sender_id: m.sender_id,
-            is_read: !!m.is_read,
-            created_at: m.created_at,
-            attachment_type: m.attachment_type
-          };
-          if (!m.is_read && m.receiver_id === user.id) {
-            counts[partnerId] = (counts[partnerId] || 0) + 1;
-          }
-        });
-        setLastMessages(mapping);
-        setUnreadCounts(counts);
-      }
-    };
     fetchLastMessages();
 
     // Subscribe to real-time changes
@@ -240,7 +249,7 @@ const TeacherDashboard = () => {
         event: '*',
         schema: 'public',
         table: 'chat_messages'
-      }, (payload) => {
+      }, () => {
         fetchLastMessages();
       })
       .subscribe();
@@ -748,9 +757,9 @@ const TeacherDashboard = () => {
                   <span className="text-slate-600 dark:text-slate-355 font-semibold">Registered Students:</span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-100">{stats.totalStudents ?? 0}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-sm">
+                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="text-slate-600 dark:text-slate-355 font-semibold">Avg. Course Rating:</span>
-                  <span className="font-extrabold text-slate-800 dark:text-slate-100">{(stats.avgRating ?? 4.8).toFixed(1)}</span>
+                  <span className="font-extrabold text-slate-800 dark:text-slate-100">{stats.avgRating ? Number(stats.avgRating).toFixed(1) : "0.0"}</span>
                 </div>
               </div>
             </div>
@@ -775,7 +784,7 @@ const TeacherDashboard = () => {
                   className="absolute bg-gradient-to-t from-[#FF7D46]/60 to-[#FFB982]/60 w-[200%] h-[200%] rounded-[38%] opacity-85"
                   style={{
                     left: '50%',
-                    bottom: `${((stats.avgRating || 0) / 5.0) * 100 - 200}%`,
+                    bottom: `${(stats.todayProgressPercent || 0) - 200}%`,
                     animation: 'wave-rotation-1 12s infinite linear'
                   }}
                 />
@@ -785,7 +794,7 @@ const TeacherDashboard = () => {
                   className="absolute bg-gradient-to-t from-[#FF7D46]/40 to-[#FFB982]/40 w-[195%] h-[195%] rounded-[40%] opacity-65"
                   style={{
                     left: '50%',
-                    bottom: `${((stats.avgRating || 0) / 5.0) * 100 - 195}%`,
+                    bottom: `${(stats.todayProgressPercent || 0) - 195}%`,
                     animation: 'wave-rotation-2 9s infinite linear'
                   }}
                 />
@@ -793,7 +802,7 @@ const TeacherDashboard = () => {
                 {/* Rating Percentage Center Value */}
                 <div className="relative z-10 flex flex-col items-center justify-center select-none text-center">
                   <span className="text-4xl font-black text-slate-800 dark:text-white drop-shadow-sm leading-none">
-                    {Math.round(((stats.avgRating || 0) / 5.0) * 100)}%
+                    {Math.round(stats.todayProgressPercent || 0)}%
                   </span>
                   <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider mt-1.5">Rating</span>
                 </div>
@@ -1160,9 +1169,9 @@ const TeacherDashboard = () => {
 
       <MessageTeacherModal
         isOpen={activeModal === 'message'}
-        onClose={() => { setActiveModal(null); setSelectedStudentIdForChat(undefined); }}
+        onClose={() => { setActiveModal(null); setSelectedStudentIdForChat(undefined); fetchLastMessages(); }}
         recipientId={selectedStudentIdForChat}
-        role="teacher"
+        onMessagesRead={fetchLastMessages}
       />
 
       {/* Teacher Quick Action Modals */}

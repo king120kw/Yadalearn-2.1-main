@@ -329,7 +329,6 @@ export const CreateSessionModal = ({ isOpen, onClose }: CreateSessionModalProps)
                                                 value={formData.startTime}
                                                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                                             />
-                                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">schedule</span>
                                         </div>
                                     </div>
                                     <div className="flex-1 flex flex-col gap-1">

@@ -289,7 +289,7 @@ const ParentProgress = () => {
             setIsMessageModalOpen(false);
             setSelectedTeacherId(null);
           }}
-          teacherId={selectedTeacherId}
+          recipientId={selectedTeacherId}
         />
       )}
     </div>

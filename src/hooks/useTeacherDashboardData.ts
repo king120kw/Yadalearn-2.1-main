@@ -209,15 +209,15 @@ export function useTeacherDashboardData() {
                 if (allRatings && allRatings.length > 0) {
                     const sum = allRatings.reduce((acc: number, curr: any) => acc + (curr.rating || 0), 0);
                     allTimeAvg = Math.round((sum / allRatings.length) * 10) / 10;
+                    
+                    // Update teacher_profiles with the average rating
+                    await supabase
+                        .from('teacher_profiles')
+                        .update({ rating: allTimeAvg })
+                        .eq('id', userId);
                 }
 
-                // Update teacher_profiles with the average rating
-                await supabase
-                    .from('teacher_profiles')
-                    .update({ rating: allTimeAvg })
-                    .eq('id', userId);
-
-                // Fetch today's ratings for the teacher dashboard daily display
+                // Fetch today's ratings for the teacher dashboard daily display (since local midnight)
                 const todayStart = new Date();
                 todayStart.setHours(0, 0, 0, 0);
 
@@ -228,10 +228,15 @@ export function useTeacherDashboardData() {
                     .eq('rated_as', 'teacher')
                     .gte('created_at', todayStart.toISOString());
 
-                let dailyAvg = 0;
+                let todayAvg = 0;
+                let todayProgressPercent = 0;
+                let todayCount = 0;
+
                 if (todayRatings && todayRatings.length > 0) {
+                    todayCount = todayRatings.length;
                     const sum = todayRatings.reduce((acc: number, curr: any) => acc + (curr.rating || 0), 0);
-                    dailyAvg = Math.round((sum / todayRatings.length) * 10) / 10;
+                    todayAvg = Math.round((sum / todayRatings.length) * 10) / 10;
+                    todayProgressPercent = Math.round((todayAvg / 5.0) * 100);
                 }
 
                 // 5. Fetch actual courses count
@@ -273,11 +278,12 @@ export function useTeacherDashboardData() {
                 // Fetch min_rate from teacher_profiles
                 const { data: tp } = await supabase
                     .from('teacher_profiles')
-                    .select('min_rate')
+                    .select('min_rate, rating')
                     .eq('id', userId)
                     .maybeSingle();
 
                 const monthlyRate = tp?.min_rate ? Number(tp.min_rate) : 150;
+                const profileRating = tp?.rating != null ? Number(tp.rating) : allTimeAvg;
 
                 const statsObject = {
                     earnings: studentsList.length * monthlyRate,
@@ -286,7 +292,10 @@ export function useTeacherDashboardData() {
                     activeCourses: activeCoursesCount,
                     completedTasks: completedTasksCount,
                     pendingTasks: pendingTasksCount,
-                    avgRating: dailyAvg
+                    avgRating: profileRating,
+                    todayAvg: todayAvg,
+                    todayProgressPercent: todayProgressPercent,
+                    todayCount: todayCount
                 };
                 setStats(statsObject);
                 localStorage.setItem('yadalearn-cached-teacher-stats', JSON.stringify(statsObject));
@@ -299,6 +308,47 @@ export function useTeacherDashboardData() {
         }
 
         fetchData();
+
+        // Real-time rating sync listeners
+        const ratingChannel = supabase.channel(`teacher-ratings-${userId}`);
+        ratingChannel
+            .on('broadcast', { event: 'rating_updated' }, (payload) => {
+                console.log('Realtime rating_updated received:', payload);
+                if (payload.payload?.rating) {
+                    setStats(prev => {
+                        const updated = { ...prev, avgRating: payload.payload.rating };
+                        localStorage.setItem('yadalearn-cached-teacher-stats', JSON.stringify(updated));
+                        return updated;
+                    });
+                }
+                fetchData();
+            })
+            .subscribe();
+
+        const dbRatingSub = supabase
+            .channel(`ratings-db-changes-${userId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'session_ratings',
+                filter: `rated_id=eq.${userId}`
+            }, () => {
+                fetchData();
+            })
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'teacher_profiles',
+                filter: `id=eq.${userId}`
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(ratingChannel);
+            supabase.removeChannel(dbRatingSub);
+        };
     }, [isLoaded, userId]);
 
     return { teacherSchedule, topStudents, stats, pendingBookings, loading };

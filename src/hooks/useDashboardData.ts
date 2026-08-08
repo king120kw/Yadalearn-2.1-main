@@ -150,13 +150,13 @@ export function useDashboardData(studentId?: string) {
                 }
 
                 const teachers = finalTeachersData.map((t: any) => {
-                    const tp = t.teacher_profiles || {};
+                    const tp = Array.isArray(t.teacher_profiles) ? (t.teacher_profiles[0] || {}) : (t.teacher_profiles || {});
                     return {
                         id: t.id,
                         name: t.full_name || 'Unknown Teacher',
                         avatar: t.avatar_url || 'https://i.pravatar.cc/150',
                         subjects: t.subjects || ['General'],
-                        rating: tp.rating ? Number(tp.rating) : 0,
+                        rating: tp.rating != null ? Number(tp.rating) : 0,
                         reviews: 12,
                         rateMin: tp.min_rate || 40,
                         rateMax: tp.max_rate || 80,

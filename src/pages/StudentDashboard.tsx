@@ -115,36 +115,45 @@ const StudentDashboard = ({ viewAsStudentId, onBackToParent }: StudentDashboardP
   const [lastMessages, setLastMessages] = useState<Record<string, any>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
+  const fetchLastMessages = async () => {
+    if (!user?.id) return;
+    let deletedSet = new Set<string>();
+    try {
+      const saved = localStorage.getItem(`deleted_messages_${user.id}`);
+      if (saved) deletedSet = new Set(JSON.parse(saved));
+    } catch {}
+
+    const { data } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      const filtered = data.filter((m: any) => !deletedSet.has(m.id));
+      const mapping: any = {};
+      const counts: Record<string, number> = {};
+      filtered.forEach((m: any) => {
+        const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        mapping[partnerId] = {
+          message: m.message,
+          sender_id: m.sender_id,
+          is_read: !!m.is_read,
+          created_at: m.created_at,
+          attachment_type: m.attachment_type
+        };
+        if (!m.is_read && m.receiver_id === user.id) {
+          counts[partnerId] = (counts[partnerId] || 0) + 1;
+        }
+      });
+      setLastMessages(mapping);
+      setUnreadCounts(counts);
+    }
+  };
+
   useEffect(() => {
     if (!user?.id) return;
 
-    const fetchLastMessages = async () => {
-      const { data } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: true });
-
-      if (data) {
-        const mapping: any = {};
-        const counts: Record<string, number> = {};
-        data.forEach((m: any) => {
-          const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
-          mapping[partnerId] = {
-            message: m.message,
-            sender_id: m.sender_id,
-            is_read: !!m.is_read,
-            created_at: m.created_at,
-            attachment_type: m.attachment_type
-          };
-          if (!m.is_read && m.receiver_id === user.id) {
-            counts[partnerId] = (counts[partnerId] || 0) + 1;
-          }
-        });
-        setLastMessages(mapping);
-        setUnreadCounts(counts);
-      }
-    };
     fetchLastMessages();
 
     // Subscribe to real-time changes
@@ -154,7 +163,7 @@ const StudentDashboard = ({ viewAsStudentId, onBackToParent }: StudentDashboardP
         event: '*',
         schema: 'public',
         table: 'chat_messages'
-      }, (payload) => {
+      }, () => {
         fetchLastMessages();
       })
       .subscribe();
@@ -369,7 +378,11 @@ const StudentDashboard = ({ viewAsStudentId, onBackToParent }: StudentDashboardP
     date: b.date,
     time: b.time,
     title: `${b.subject} with ${b.teacher?.full_name || 'Teacher'}`,
-    status: b.status
+    status: b.status,
+    rating: b.rating,
+    teacherId: b.teacher?.id,
+    teacherName: b.teacher?.full_name || 'Teacher',
+    teacherAvatar: b.teacher?.avatar_url
   }));
 
   const nextEvent = getNextUpcomingEvent(studentSchedule);
@@ -943,10 +956,25 @@ const StudentDashboard = ({ viewAsStudentId, onBackToParent }: StudentDashboardP
                           
                           if (hasPassed || session.status === 'completed') {
                             return (
-                              <div key={session.id} className="flex items-center gap-3 p-2.5 bg-slate-50/50 dark:bg-zinc-800/10 border-l-4 border-slate-300 rounded-r-xl border border-y-slate-100/50 border-r-slate-100/50 dark:border-y-transparent dark:border-r-transparent opacity-60">
+                              <div key={session.id} className="flex items-center justify-between gap-3 p-2.5 bg-slate-50/50 dark:bg-zinc-800/10 border-l-4 border-slate-300 rounded-r-xl border border-y-slate-100/50 border-r-slate-100/50 dark:border-y-transparent dark:border-r-transparent opacity-90">
                                 <span className="font-bold text-[10px] text-slate-400 dark:text-zinc-500 whitespace-nowrap line-through">{session.time}</span>
-                                <span className="text-xs font-semibold text-slate-555 dark:text-zinc-400 truncate line-through flex-1">{session.title}</span>
-                                <span className="material-symbols-outlined text-xs text-slate-400 shrink-0">check_circle</span>
+                                <span className="text-xs font-semibold text-slate-555 dark:text-zinc-400 truncate flex-1">{session.title}</span>
+                                {session.rating ? (
+                                  <span className="text-[11px] font-extrabold text-amber-500 flex items-center gap-0.5 shrink-0">
+                                    ⭐ {session.rating}
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedBookingToRate(session);
+                                      setRatingValue(0);
+                                      setIsRatingModalOpen(true);
+                                    }}
+                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] rounded-lg transition-all shadow-xs cursor-pointer shrink-0"
+                                  >
+                                    Rate Session
+                                  </button>
+                                )}
                               </div>
                             );
                           }
@@ -1142,9 +1170,9 @@ const StudentDashboard = ({ viewAsStudentId, onBackToParent }: StudentDashboardP
       <AssignmentsModal isOpen={activeModal === 'assignments'} onClose={() => setActiveModal(null)} />
       <MessageTeacherModal 
         isOpen={activeModal === 'message'} 
-        onClose={() => { setActiveModal(null); setSelectedTeacherIdForChat(undefined); }} 
+        onClose={() => { setActiveModal(null); setSelectedTeacherIdForChat(undefined); fetchLastMessages(); }} 
         recipientId={selectedTeacherIdForChat}
-        role="student"
+        onMessagesRead={fetchLastMessages}
       />
 
       <ScanQRModal 
@@ -1204,16 +1232,64 @@ const StudentDashboard = ({ viewAsStudentId, onBackToParent }: StudentDashboardP
                   }
                   setIsSubmittingRating(true);
                   try {
-                    const { error } = await supabase
-                      .from('bookings')
-                      .update({ rating: ratingValue })
-                      .eq('id', selectedBookingToRate.id);
+                    const targetTeacherId = selectedBookingToRate.teacherId || selectedBookingToRate.teacher?.id;
+                    if (!user?.id || !targetTeacherId) {
+                      throw new Error("Missing user or teacher details for rating");
+                    }
 
-                    if (error) throw error;
+                    // 1. Insert real row into session_ratings
+                    const { error: ratingErr } = await supabase
+                      .from('session_ratings')
+                      .insert({
+                        rater_id: user.id,
+                        rated_id: targetTeacherId,
+                        rating: ratingValue,
+                        rated_as: 'teacher'
+                      });
+
+                    if (ratingErr) throw ratingErr;
+
+                    // 2. Also update booking row if applicable
+                    if (selectedBookingToRate.id) {
+                      await supabase
+                        .from('bookings')
+                        .update({ rating: ratingValue })
+                        .eq('id', selectedBookingToRate.id);
+                    }
+
+                    // 3. Recalculate average rating for teacher and write to teacher_profiles
+                    const { data: allRatings } = await supabase
+                      .from('session_ratings')
+                      .select('rating')
+                      .eq('rated_id', targetTeacherId)
+                      .eq('rated_as', 'teacher');
+
+                    let newAvg = ratingValue;
+                    if (allRatings && allRatings.length > 0) {
+                      const sum = allRatings.reduce((acc: number, curr: any) => acc + (curr.rating || 0), 0);
+                      newAvg = Math.round((sum / allRatings.length) * 10) / 10;
+                    }
+
+                    await supabase
+                      .from('teacher_profiles')
+                      .update({ rating: newAvg })
+                      .eq('id', targetTeacherId);
+
+                    // 4. Real-time broadcast notification
+                    const channel = supabase.channel(`teacher-ratings-${targetTeacherId}`);
+                    await channel.subscribe((status) => {
+                      if (status === 'SUBSCRIBED') {
+                        channel.send({
+                          type: 'broadcast',
+                          event: 'rating_updated',
+                          payload: { teacherId: targetTeacherId, rating: newAvg }
+                        });
+                        setTimeout(() => supabase.removeChannel(channel), 1000);
+                      }
+                    });
 
                     alert(`Thank you! Your rating of ${ratingValue} stars has been recorded.`);
                     setIsRatingModalOpen(false);
-                    // Refresh page to load updated database state
                     window.location.reload();
                   } catch (e: any) {
                     console.error("Error submitting rating:", e);

@@ -110,6 +110,7 @@ const StudentSearch = () => {
                         country,
                         bio,
                         teacher_profiles (
+                            rating,
                             teaching_focus,
                             language_specialization,
                             subject_specialization,
@@ -134,7 +135,7 @@ const StudentSearch = () => {
                 }
 
                 const dbTeachers = data ? data.map((t: any) => {
-                    const tp = t.teacher_profiles || {};
+                    const tp = Array.isArray(t.teacher_profiles) ? (t.teacher_profiles[0] || {}) : (t.teacher_profiles || {});
                     const subjectsList = [];
                     if (tp.language_specialization) subjectsList.push(...tp.language_specialization);
                     if (tp.subject_specialization) subjectsList.push(...tp.subject_specialization);
@@ -155,7 +156,7 @@ const StudentSearch = () => {
                         id: t.id,
                         name: t.full_name || 'Teacher',
                         subject: subjectsList.length > 0 ? subjectsList.join(', ') : 'General Tutor',
-                        rating: 4.9,
+                        rating: tp.rating != null ? Number(tp.rating) : 0,
                         country: countryName,
                         flag: flagEmoji,
                         students: 12,
