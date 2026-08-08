@@ -1,8 +1,7 @@
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
-exports.handler = async (event, context) => {
+export async function handler(event, context) {
   const secret = process.env.STREAM_SECRET || process.env.STREAM_SECRET_KEY || process.env.VITE_STREAM_SECRET || process.env.STREAM_API_SECRET;
-
 
   if (!secret) {
     return {
@@ -12,7 +11,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  const userId = event.queryStringParameters.user_id;
+  const userId = event.queryStringParameters?.user_id;
 
   if (!userId) {
     return {
@@ -38,4 +37,5 @@ exports.handler = async (event, context) => {
       headers: { 'Content-Type': 'application/json' }
     };
   }
-};
+}
+
