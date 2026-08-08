@@ -6,7 +6,6 @@ import {
   SpeakerLayout, 
   PaginatedGridLayout, 
   CallControls, 
-  ScreenShareButton,
   useCallStateHooks,
   useCall,
   Call,
@@ -187,14 +186,29 @@ const CustomParticipantViewUI = ({ participant: propParticipant }: { participant
   );
 };
 
-// Dynamic Participant Grid Layout that aligns columns & rows based on participant count
+// Dynamic Participant Grid Layout — Meet-style equal tiles, responsive to orientation
 const CustomResponsiveGridLayout = () => {
   const { useParticipants } = useCallStateHooks();
   const participants = useParticipants();
 
+  // Detect portrait vs landscape orientation reactively
+  const [isPortrait, setIsPortrait] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(orientation: portrait)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const mql = window.matchMedia('(orientation: portrait)');
+    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
   const count = participants.length;
 
-  // Calculate columns and rows based on participant count
+  // Calculate columns and rows based on participant count AND orientation
   let cols = 1;
   let rows = 1;
 
@@ -202,46 +216,54 @@ const CustomResponsiveGridLayout = () => {
     cols = 1;
     rows = 1;
   } else if (count === 2) {
-    cols = 2;
-    rows = 1;
+    // Portrait: stack vertically (1 col, 2 rows) — Meet-style
+    // Landscape: side by side (2 cols, 1 row)
+    cols = isPortrait ? 1 : 2;
+    rows = isPortrait ? 2 : 1;
   } else if (count <= 4) {
     cols = 2;
     rows = 2;
   } else if (count <= 6) {
-    cols = 3;
-    rows = 2;
+    cols = isPortrait ? 2 : 3;
+    rows = isPortrait ? 3 : 2;
   } else if (count <= 9) {
     cols = 3;
     rows = 3;
   } else if (count <= 12) {
-    cols = 4;
-    rows = 3;
+    cols = isPortrait ? 3 : 4;
+    rows = isPortrait ? 4 : 3;
   } else if (count <= 16) {
     cols = 4;
     rows = 4;
   } else if (count <= 20) {
-    cols = 5;
-    rows = 4;
+    cols = isPortrait ? 4 : 5;
+    rows = isPortrait ? 5 : 4;
   } else if (count <= 24) {
-    cols = 6;
-    rows = 4;
+    cols = isPortrait ? 4 : 6;
+    rows = isPortrait ? 6 : 4;
   } else {
-    cols = 6;
-    rows = Math.ceil(count / 6);
+    cols = isPortrait ? 4 : 6;
+    rows = Math.ceil(count / cols);
   }
 
   return (
     <div
-      className="w-full h-full grid gap-2.5 sm:gap-3.5 p-3 sm:p-5 overflow-hidden bg-zinc-950"
+      className="w-full h-full grid gap-2 sm:gap-3 p-2 sm:p-4 overflow-hidden bg-zinc-950"
       style={{
         gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`
+        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        alignContent: 'center',
       }}
     >
       {participants.map((participant) => (
         <div
           key={participant.sessionId || participant.userId}
-          className="relative w-full h-full overflow-hidden rounded-2xl bg-[#202124] border border-white/10 shadow-lg flex items-center justify-center"
+          className="relative w-full overflow-hidden rounded-2xl bg-[#202124] border border-white/10 shadow-lg"
+          style={{
+            aspectRatio: isPortrait ? '16 / 9' : undefined,
+            maxHeight: '100%',
+            minHeight: 0,
+          }}
         >
           <ParticipantView
             participant={participant}
@@ -477,8 +499,6 @@ const CallLayout = ({ handleLeave }: { handleLeave: () => void }) => {
           </span>
         </button>
         <div className="w-[1px] h-6 bg-white/20" />
-        <ScreenShareButton />
-        <div className="w-[1px] h-6 bg-white/20" />
         <CallControls onLeave={handleLeave} />
       </div>
     </div>
@@ -492,6 +512,7 @@ const Meeting = () => {
   const { user, endSession } = useAuth();
   const [call, setCall] = useState<Call | null>(null);
   const [error, setError] = useState('');
+  const alreadyLeftRef = React.useRef(false);
 
   const [isWaiting, setIsWaiting] = useState(() => {
     const role = user?.role || localStorage.getItem('yadalearn-user-role');
@@ -526,7 +547,7 @@ const Meeting = () => {
     checkClassStatus();
   }, [id]);
 
-  // Supabase Realtime channel for Waiting Room
+  // Supabase Realtime channel for Waiting Room + Session-Ended listener
   useEffect(() => {
     if (!id || !user) return;
     
@@ -547,6 +568,15 @@ const Meeting = () => {
     channel.on('broadcast', { event: 'admit' }, ({ payload }) => {
       if (role === 'student' && payload.studentId === user.id) {
         setIsWaiting(false);
+      }
+    });
+
+    // Listen for host ending the session – students auto-leave
+    channel.on('broadcast', { event: 'session-ended' }, () => {
+      if (role === 'student') {
+        alreadyLeftRef.current = true;
+        endSession().catch(() => {});
+        navigate(`/rate-teacher/${id}`);
       }
     });
 
@@ -649,8 +679,16 @@ const Meeting = () => {
 
     return () => {
       isMounted = false;
-      if (callObj) {
-        callObj.leave().catch(console.error);
+      if (callObj && !alreadyLeftRef.current) {
+        alreadyLeftRef.current = true;
+        try {
+          const result = callObj.leave();
+          if (result && typeof result.catch === 'function') {
+            result.catch((err: any) => console.warn('Cleanup leave error (safe to ignore):', err?.message));
+          }
+        } catch (err: any) {
+          console.warn('Cleanup leave error (safe to ignore):', err?.message);
+        }
       }
     };
   }, [client, isStreamReady, id, isWaiting]);
@@ -680,22 +718,78 @@ const Meeting = () => {
   };
 
   const handleLeave = async () => {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      const updateQuery = id.startsWith('class-')
+    // Prevent double-leave (Stream CallControls already calls leave before onLeave fires)
+    if (alreadyLeftRef.current) return;
+    alreadyLeftRef.current = true;
+
+    const savedRole = localStorage.getItem('yadalearn-user-role');
+    const role = user?.role || savedRole;
+    const isHost = role === 'teacher';
+
+    // 1. Mark class completed in Supabase (safe try/catch – query builder .catch can fail)
+    try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || '');
+      const updateQuery = (id || '').startsWith('class-')
         ? supabase.from('live_classes').update({ status: 'completed' }).eq('room_id', id)
         : isUuid
         ? supabase.from('live_classes').update({ status: 'completed' }).or(`room_id.eq.${id},id.eq.${id}`)
         : supabase.from('live_classes').update({ status: 'completed' }).eq('room_id', id);
-      await updateQuery.catch(console.error);
-
-    if (call) {
-      call.leave();
+      await updateQuery;
+    } catch (err) {
+      console.error('Failed to update class status:', err);
     }
-    await endSession();
-    
-    const savedRole = localStorage.getItem('yadalearn-user-role');
-    const role = user?.role || savedRole;
-    
+
+    // 2. End or leave the Stream call
+    if (call) {
+      try {
+        if (isHost) {
+          // Host: endCall() ends the call for ALL participants (not just self)
+          await call.endCall();
+        } else {
+          // Student: leave() only removes this user
+          await call.leave();
+        }
+      } catch (err: any) {
+        // "already been left" or "already ended" is safe to ignore
+        console.warn('Leave/end call:', err?.message);
+      }
+    }
+
+    // 3. Host: broadcast 'session-ended' so every student client navigates away
+    if (isHost && id) {
+      try {
+        const activeChannel = supabase.getChannels().find(c => c.topic === `realtime:room-${id}`);
+        if (activeChannel) {
+          await activeChannel.send({
+            type: 'broadcast',
+            event: 'session-ended',
+            payload: { endedBy: user?.id }
+          });
+        } else {
+          const tempChannel = supabase.channel(`room-${id}`);
+          tempChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              tempChannel.send({
+                type: 'broadcast',
+                event: 'session-ended',
+                payload: { endedBy: user?.id }
+              });
+              setTimeout(() => supabase.removeChannel(tempChannel), 1000);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to broadcast session-ended:', err);
+      }
+    }
+
+    // 4. Clean up auth session and navigate
+    try {
+      await endSession();
+    } catch (err) {
+      console.warn('endSession error:', err);
+    }
+
     if (role === 'student') {
       navigate(`/rate-teacher/${id}`);
     } else {
@@ -849,12 +943,11 @@ const Meeting = () => {
           justify-content: center !important;
         }
 
-        /* Participant view tiles stretch to fill available height & width */
+        /* Participant view tiles — equal cells, not forced full-height */
         .str-video__paginated-grid-layout__group > .str-video__participant-view,
         .str-video__paginated-grid-layout__group > div,
         .str-video__grid-layout__wrapper > .str-video__participant-view {
-          flex: 1 1 calc(50% - 8px) !important;
-          height: 100% !important;
+          flex: 1 1 auto !important;
           min-height: 0 !important;
           max-height: 100% !important;
           aspect-ratio: unset !important;
@@ -865,7 +958,6 @@ const Meeting = () => {
         .str-video__grid-layout__wrapper > .str-video__participant-view:only-child {
           flex: 1 1 100% !important;
           width: 100% !important;
-          height: 100% !important;
           max-height: 100% !important;
         }
 
