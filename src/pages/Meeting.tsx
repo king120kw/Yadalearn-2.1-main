@@ -497,6 +497,9 @@ const Meeting = () => {
     const role = user?.role || localStorage.getItem('yadalearn-user-role');
     return role === 'student';
   });
+  const [waitingStudents, setWaitingStudents] = useState<
+    { id: string; name: string; avatar?: string }[]
+  >([]);
   // Verify if session has already ended
   useEffect(() => {
     if (!id) return;
