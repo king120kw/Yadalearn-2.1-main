@@ -397,10 +397,14 @@ const TeacherDashboard = () => {
   const handleCancelClass = async (classId: string) => {
     if (!confirm('Are you sure you want to cancel this class?')) return;
     try {
-      const { error } = await supabase
-        .from('live_classes')
-        .update({ status: 'cancelled' })
-        .eq('id', classId);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(classId);
+      const query = classId.startsWith('class-')
+        ? supabase.from('live_classes').update({ status: 'cancelled' }).eq('room_id', classId)
+        : isUuid
+        ? supabase.from('live_classes').update({ status: 'cancelled' }).eq('id', classId)
+        : supabase.from('live_classes').update({ status: 'cancelled' }).eq('room_id', classId);
+      const { error } = await query;
+
       if (error) throw error;
       alert('Class cancelled successfully.');
       window.location.reload();

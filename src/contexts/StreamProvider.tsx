@@ -11,7 +11,8 @@ const StreamContext = createContext<StreamContextType>({ client: null, isStreamR
 
 export const useStream = () => useContext(StreamContext);
 
-const apiKey = import.meta.env.VITE_STREAM_API_KEY;
+const apiKey = import.meta.env.VITE_STREAM_API_KEY || import.meta.env.STREAM_API_KEY || import.meta.env.VITE_STREAM_KEY;
+
 
 export const StreamProvider = ({ children }: { children: React.ReactNode }) => {
   const [client, setClient] = useState<StreamVideoClient | null>(null);

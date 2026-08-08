@@ -1,7 +1,8 @@
 const jwt = require('jsonwebtoken');
 
 exports.handler = async (event, context) => {
-  const secret = process.env.STREAM_SECRET;
+  const secret = process.env.STREAM_SECRET || process.env.STREAM_SECRET_KEY || process.env.VITE_STREAM_SECRET || process.env.STREAM_API_SECRET;
+
 
   if (!secret) {
     return {

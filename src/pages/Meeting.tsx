@@ -501,11 +501,17 @@ const Meeting = () => {
   useEffect(() => {
     if (!id) return;
     const checkClassStatus = async () => {
-      const { data } = await supabase
-        .from('live_classes')
-        .select('status')
-        .or(`room_id.eq.${id},id.eq.${id}`)
-        .limit(1);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      let query = supabase.from('live_classes').select('status');
+      if (id.startsWith('class-')) {
+        query = query.eq('room_id', id);
+      } else if (isUuid) {
+        query = query.or(`room_id.eq.${id},id.eq.${id}`);
+      } else {
+        query = query.eq('room_id', id);
+      }
+      const { data } = await query.limit(1);
+
 
       if (data && data.length > 0) {
         const status = data[0].status?.toLowerCase();
@@ -671,9 +677,14 @@ const Meeting = () => {
   };
 
   const handleLeave = async () => {
-    if (id) {
-      await supabase.from('live_classes').update({ status: 'completed' }).or(`room_id.eq.${id},id.eq.${id}`).catch(console.error);
-    }
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      const updateQuery = id.startsWith('class-')
+        ? supabase.from('live_classes').update({ status: 'completed' }).eq('room_id', id)
+        : isUuid
+        ? supabase.from('live_classes').update({ status: 'completed' }).or(`room_id.eq.${id},id.eq.${id}`)
+        : supabase.from('live_classes').update({ status: 'completed' }).eq('room_id', id);
+      await updateQuery.catch(console.error);
+
     if (call) {
       call.leave();
     }
